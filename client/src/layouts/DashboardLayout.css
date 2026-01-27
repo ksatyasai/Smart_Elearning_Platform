@@ -1,0 +1,42 @@
+/* DashboardLayout.css - Styles for dashboard layout */
+
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--bg-secondary);
+}
+
+/* Content Area */
+.dashboard-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    transition: margin-left var(--transition-base);
+}
+
+.dashboard-layout.sidebar-collapsed .dashboard-content {
+    margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Main Content */
+.dashboard-main {
+    flex: 1;
+    padding: var(--space-6);
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .dashboard-content {
+        margin-left: 0;
+    }
+
+    .dashboard-layout.sidebar-collapsed .dashboard-content {
+        margin-left: 0;
+    }
+
+    .dashboard-main {
+        padding: var(--space-4);
+    }
+}
