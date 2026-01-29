@@ -163,7 +163,7 @@ export const getCourseProgress = async (req, res, next) => {
 // @access  Private (instructor only)
 export const createCourse = async (req, res, next) => {
   try {
-    const { title, description, category, level, price, image, isPublished } = req.body;
+    const { title, description, category, level, price, image, isPublished, modules } = req.body;
 
     // Validation
     if (!title || !description) {
@@ -187,7 +187,8 @@ export const createCourse = async (req, res, next) => {
       price: price || 0,
       image: image || 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=400&h=300&fit=crop',
       instructor: req.user._id,
-      isPublished: isPublished !== undefined ? isPublished : false
+      isPublished: isPublished !== undefined ? isPublished : false,
+      modules: modules || []
     });
 
     console.log('Course created:', course);
@@ -219,7 +220,7 @@ export const updateCourse = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorized to update this course' });
     }
 
-    const { title, description, category, level, price, isPublished, image } = req.body;
+    const { title, description, category, level, price, isPublished, image, modules } = req.body;
 
     if (title) course.title = title;
     if (description) course.description = description;
@@ -228,6 +229,7 @@ export const updateCourse = async (req, res, next) => {
     if (price !== undefined) course.price = price;
     if (image) course.image = image;
     if (isPublished !== undefined) course.isPublished = isPublished;
+    if (modules) course.modules = modules;
 
     await course.save();
 

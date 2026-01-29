@@ -1,6 +1,7 @@
 /**
  * CreateCourse.jsx
  * Dedicated page for instructors to create and upload new courses
+ * Enhanced with module and lesson management (including YouTube videos)
  */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +17,14 @@ import {
     ArrowLeft,
     AlertCircle,
     CheckCircle,
-    Loader
+    Loader,
+    Plus,
+    X,
+    ChevronDown,
+    ChevronUp,
+    Youtube,
+    Trash2,
+    Video
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { coursesAPI } from '../services/api';
@@ -24,7 +32,7 @@ import './CreateCourse.css';
 
 /**
  * CreateCourse component
- * Full-featured course creation form with backend integration
+ * Full-featured course creation form with module/lesson management
  */
 const CreateCourse = () => {
     const navigate = useNavigate();
@@ -43,10 +51,12 @@ const CreateCourse = () => {
         level: 'Beginner',
         price: 0,
         image: 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=600&h=400&fit=crop',
-        isPublished: false
+        isPublished: false,
+        modules: []
     });
 
     const [imagePreview, setImagePreview] = useState(formData.image);
+    const [expandedModuleIndex, setExpandedModuleIndex] = useState(-1);
 
     const categories = [
         'Programming',
@@ -78,8 +88,73 @@ const CreateCourse = () => {
         setImagePreview(value);
     };
 
+    // Module Management
+    const addModule = () => {
+        setFormData(prev => ({
+            ...prev,
+            modules: [...prev.modules, {
+                title: '',
+                description: '',
+                order: prev.modules.length,
+                lessons: [],
+                isPublished: true
+            }]
+        }));
+    };
+
+    const removeModule = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            modules: prev.modules.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateModule = (index, field, value) => {
+        setFormData(prev => {
+            const newModules = [...prev.modules];
+            newModules[index] = { ...newModules[index], [field]: value };
+            return { ...prev, modules: newModules };
+        });
+    };
+
+    const addLessonToModule = (moduleIndex) => {
+        setFormData(prev => {
+            const newModules = [...prev.modules];
+            if (!newModules[moduleIndex].lessons) {
+                newModules[moduleIndex].lessons = [];
+            }
+            newModules[moduleIndex].lessons.push({
+                title: '',
+                description: '',
+                youtubeUrl: '',
+                duration: 0,
+                order: newModules[moduleIndex].lessons.length,
+                isPublished: true
+            });
+            return { ...prev, modules: newModules };
+        });
+    };
+
+    const removeLessonFromModule = (moduleIndex, lessonIndex) => {
+        setFormData(prev => {
+            const newModules = [...prev.modules];
+            newModules[moduleIndex].lessons = newModules[moduleIndex].lessons.filter((_, i) => i !== lessonIndex);
+            return { ...prev, modules: newModules };
+        });
+    };
+
+    const updateLesson = (moduleIndex, lessonIndex, field, value) => {
+        setFormData(prev => {
+            const newModules = [...prev.modules];
+            newModules[moduleIndex].lessons[lessonIndex] = {
+                ...newModules[moduleIndex].lessons[lessonIndex],
+                [field]: value
+            };
+            return { ...prev, modules: newModules };
+        });
+    };
+
     useEffect(() => {
-        // If navigated here with course data (for editing), prefill the form
         const course = location.state?.course;
         if (course) {
             setEditingId(course._id || course.id || null);
@@ -91,7 +166,8 @@ const CreateCourse = () => {
                 level: course.level || prev.level,
                 price: typeof course.price === 'number' ? course.price : prev.price,
                 image: course.image || prev.image,
-                isPublished: !!course.isPublished
+                isPublished: !!course.isPublished,
+                modules: course.modules || []
             }));
             setImagePreview(course.image || imagePreview);
         }
@@ -138,6 +214,28 @@ const CreateCourse = () => {
         if (!formData.image.trim()) {
             setError('Image URL is required');
             return false;
+        }
+
+        // Validate modules if any
+        for (let i = 0; i < formData.modules.length; i++) {
+            const module = formData.modules[i];
+            if (!module.title.trim()) {
+                setError(`Module ${i + 1}: Title is required`);
+                return false;
+            }
+            if (module.lessons && module.lessons.length > 0) {
+                for (let j = 0; j < module.lessons.length; j++) {
+                    const lesson = module.lessons[j];
+                    if (!lesson.title.trim()) {
+                        setError(`Module ${i + 1}, Lesson ${j + 1}: Title is required`);
+                        return false;
+                    }
+                    if (!lesson.youtubeUrl.trim()) {
+                        setError(`Module ${i + 1}, Lesson ${j + 1}: YouTube URL is required`);
+                        return false;
+                    }
+                }
+            }
         }
 
         return true;
@@ -200,7 +298,7 @@ const CreateCourse = () => {
             }
 
             if (response.data.success) {
-                setSuccess('✓ Course saved successfully!');
+                setSuccess('✓ Course saved as draft!');
                 setTimeout(() => {
                     navigate('/instructor');
                 }, 1200);
@@ -290,7 +388,6 @@ const CreateCourse = () => {
 
                     {/* Category and Level Row */}
                     <div className="form-row">
-                        {/* Category */}
                         <div className="form-group">
                             <label className="form-label">
                                 <Tag className="form-label-icon" />
@@ -309,7 +406,6 @@ const CreateCourse = () => {
                             </select>
                         </div>
 
-                        {/* Level */}
                         <div className="form-group">
                             <label className="form-label">
                                 <AlertCircle className="form-label-icon" />
@@ -381,6 +477,179 @@ const CreateCourse = () => {
                         </div>
                     )}
 
+                    {/* Modules Section */}
+                    <div className="modules-section">
+                        <div className="modules-header">
+                            <div className="modules-title-group">
+                                <BookOpen size={28} className="modules-icon" />
+                                <div>
+                                    <h2 className="modules-title">Course Modules & Lessons</h2>
+                                    <p className="modules-subtitle">Organize your course content into modules</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={addModule}
+                                className="btn btn-add-module"
+                            >
+                                <Plus size={18} />
+                                Add Module
+                            </button>
+                        </div>
+
+                        {formData.modules.length === 0 ? (
+                            <div className="empty-modules">
+                                <div className="empty-modules-content">
+                                    <BookOpen size={48} />
+                                    <h3>No modules yet</h3>
+                                    <p>Click "Add Module" to start building your course structure</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="modules-list">
+                                {formData.modules.map((module, moduleIndex) => (
+                                    <div key={moduleIndex} className={`module-card ${expandedModuleIndex === moduleIndex ? 'expanded' : ''}`}>
+                                        <div className="module-header-row">
+                                            <div className="module-counter">
+                                                <span>{moduleIndex + 1}</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setExpandedModuleIndex(expandedModuleIndex === moduleIndex ? -1 : moduleIndex)}
+                                                className="module-toggle"
+                                                title={expandedModuleIndex === moduleIndex ? 'Collapse module' : 'Expand module'}
+                                            >
+                                                {expandedModuleIndex === moduleIndex ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
+                                            </button>
+                                            <div className="module-title-wrapper">
+                                                <label className="module-title-label">Title <span className="required-indicator">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    value={module.title}
+                                                    onChange={(e) => updateModule(moduleIndex, 'title', e.target.value)}
+                                                    placeholder="Enter module title (e.g., Introduction to Python)"
+                                                    className="module-title-input"
+                                                />
+                                            </div>
+                                            <div className="module-badge">
+                                                {module.lessons?.length || 0} lessons
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeModule(moduleIndex)}
+                                                className="btn-remove-module"
+                                                title="Delete module"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+
+                                        {expandedModuleIndex === moduleIndex && (
+                                            <div className="module-content">
+                                                <div className="form-group">
+                                                    <label className="module-label">Module Title <span className="required-indicator">*</span></label>
+                                                    <input
+                                                        type="text"
+                                                        value={module.title}
+                                                        onChange={(e) => updateModule(moduleIndex, 'title', e.target.value)}
+                                                        placeholder="Enter module title"
+                                                        className="form-input"
+                                                    />
+                                                </div>
+                                                <div className="module-description-group">
+                                                    <label className="module-label">Module Description (Optional)</label>
+                                                    <textarea
+                                                        value={module.description}
+                                                        onChange={(e) => updateModule(moduleIndex, 'description', e.target.value)}
+                                                        placeholder="Describe what students will learn in this module..."
+                                                        className="module-description-input"
+                                                    />
+                                                </div>
+
+                                                {/* Lessons */}
+                                                <div className="lessons-section">
+                                                    <div className="lessons-header">
+                                                        <h3>Lessons</h3>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => addLessonToModule(moduleIndex)}
+                                                            className="btn btn-add-lesson"
+                                                        >
+                                                            <Plus size={16} />
+                                                            Add Lesson
+                                                        </button>
+                                                    </div>
+
+                                                    {module.lessons && module.lessons.length > 0 ? (
+                                                        <div className="lessons-list">
+                                                            {module.lessons.map((lesson, lessonIndex) => (
+                                                                <div key={lessonIndex} className="lesson-item">
+                                                                    <div className="lesson-header">
+                                                                        <span className="lesson-number">{lessonIndex + 1}</span>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={lesson.title}
+                                                                            onChange={(e) => updateLesson(moduleIndex, lessonIndex, 'title', e.target.value)}
+                                                                            placeholder="Lesson title"
+                                                                            className="lesson-title-input"
+                                                                        />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => removeLessonFromModule(moduleIndex, lessonIndex)}
+                                                                            className="btn-remove-lesson"
+                                                                        >
+                                                                            <X size={18} />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <textarea
+                                                                        value={lesson.description}
+                                                                        onChange={(e) => updateLesson(moduleIndex, lessonIndex, 'description', e.target.value)}
+                                                                        placeholder="Lesson description (optional)"
+                                                                        className="lesson-description-input"
+                                                                        rows="2"
+                                                                    />
+
+                                                                    <div className="lesson-inputs-row">
+                                                                        <div className="youtube-input-group">
+                                                                            <Youtube size={18} className="youtube-icon" />
+                                                                            <input
+                                                                                type="url"
+                                                                                value={lesson.youtubeUrl}
+                                                                                onChange={(e) => updateLesson(moduleIndex, lessonIndex, 'youtubeUrl', e.target.value)}
+                                                                                placeholder="Paste YouTube URL (e.g., https://www.youtube.com/watch?v=ABC123)"
+                                                                                className="youtube-url-input"
+                                                                            />
+                                                                        </div>
+
+                                                                        <input
+                                                                            type="number"
+                                                                            value={lesson.duration}
+                                                                            onChange={(e) => updateLesson(moduleIndex, lessonIndex, 'duration', parseInt(e.target.value) || 0)}
+                                                                            placeholder="Minutes"
+                                                                            className="lesson-duration-input"
+                                                                            min="0"
+                                                                            max="600"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="empty-lessons">
+                                                            <Video size={32} />
+                                                            <p>No lessons yet. Click "Add Lesson" to add content.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Publish Checkbox */}
                     <div className="form-group">
                         <label className="checkbox-wrapper">
@@ -394,37 +663,8 @@ const CreateCourse = () => {
                             <span className="checkbox-label">Publish course immediately</span>
                         </label>
                         <p className="checkbox-hint">
-                            If unchecked, the course will be saved as a draft and you can publish it later
+                            If unchecked, the course will be saved as a draft
                         </p>
-                    </div>
-
-                    {/* Course Info Summary */}
-                    <div className="summary-box">
-                        <h3 className="summary-title">Course Summary</h3>
-                        <div className="summary-content">
-                            <div className="summary-item">
-                                <span className="summary-item-label">Title:</span>
-                                <span>{formData.title || 'Not provided'}</span>
-                            </div>
-                            <div className="summary-item">
-                                <span className="summary-item-label">Category:</span>
-                                <span>{formData.category}</span>
-                            </div>
-                            <div className="summary-item">
-                                <span className="summary-item-label">Level:</span>
-                                <span>{formData.level}</span>
-                            </div>
-                            <div className="summary-item">
-                                <span className="summary-item-label">Price:</span>
-                                <span>${formData.price.toFixed(2)}</span>
-                            </div>
-                            <div className="summary-item">
-                                <span className="summary-item-label">Status:</span>
-                                <span className={formData.isPublished ? 'summary-item-value published' : 'summary-item-value draft'}>
-                                    {formData.isPublished ? '✓ Published' : 'Draft'}
-                                </span>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Action Buttons */}
@@ -465,43 +705,6 @@ const CreateCourse = () => {
                         </button>
                     </div>
                 </form>
-
-                {/* Help Section */}
-                <div className="help-section">
-                    <h3 className="help-title">Tips for Creating a Great Course</h3>
-                    <ul className="help-list">
-                        <li className="help-item">
-                            <span className="help-check">✓</span>
-                            <span className="help-content">
-                                <strong>Compelling Title:</strong> Make it clear and engaging. Include keywords that help students find your course.
-                            </span>
-                        </li>
-                        <li className="help-item">
-                            <span className="help-check">✓</span>
-                            <span className="help-content">
-                                <strong>Detailed Description:</strong> Clearly explain what students will learn and who the course is for.
-                            </span>
-                        </li>
-                        <li className="help-item">
-                            <span className="help-check">✓</span>
-                            <span className="help-content">
-                                <strong>Quality Image:</strong> Use a professional, clear image that represents your course well.
-                            </span>
-                        </li>
-                        <li className="help-item">
-                            <span className="help-check">✓</span>
-                            <span className="help-content">
-                                <strong>Right Pricing:</strong> Consider market rates and the value you're providing.
-                            </span>
-                        </li>
-                        <li className="help-item">
-                            <span className="help-check">✓</span>
-                            <span className="help-content">
-                                <strong>Start as Draft:</strong> You can save as draft and add lessons, quizzes, and content later.
-                            </span>
-                        </li>
-                    </ul>
-                </div>
             </div>
         </div>
     );

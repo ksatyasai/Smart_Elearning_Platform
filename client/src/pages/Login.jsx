@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import './Auth.css';
 
@@ -76,7 +76,6 @@ const Login = () => {
                 <div className="input-group">
                     <label htmlFor="email" className="input-label">Email Address</label>
                     <div className="input-wrapper">
-                        <Mail size={18} className="input-icon" />
                         <input
                             type="email"
                             id="email"
@@ -84,7 +83,7 @@ const Login = () => {
                             value={formData.email}
                             onChange={handleChange}
                             placeholder="name@example.com"
-                            className="input input-with-icon"
+                            className="input"
                             autoComplete="email"
                         />
                     </div>
@@ -94,7 +93,6 @@ const Login = () => {
                 <div className="input-group">
                     <label htmlFor="password" className="input-label">Password</label>
                     <div className="input-wrapper">
-                        <Lock size={18} className="input-icon" />
                         <input
                             type={showPassword ? 'text' : 'password'}
                             id="password"
@@ -102,7 +100,7 @@ const Login = () => {
                             value={formData.password}
                             onChange={handleChange}
                             placeholder="••••••••"
-                            className="input input-with-icon"
+                            className="input"
                             autoComplete="current-password"
                         />
                         <button

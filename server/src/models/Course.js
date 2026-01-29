@@ -1,5 +1,56 @@
 import mongoose from 'mongoose';
 
+const moduleSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: [true, 'Module title is required'],
+    trim: true
+  },
+  description: {
+    type: String,
+    default: ''
+  },
+  order: {
+    type: Number,
+    default: 0
+  },
+  lessons: [{
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    description: {
+      type: String,
+      default: ''
+    },
+    youtubeUrl: {
+      type: String,
+      default: null
+    },
+    duration: {
+      type: Number, // in minutes
+      default: 0
+    },
+    order: {
+      type: Number,
+      default: 0
+    },
+    resources: [{
+      title: String,
+      url: String
+    }],
+    isPublished: {
+      type: Boolean,
+      default: true
+    }
+  }],
+  isPublished: {
+    type: Boolean,
+    default: true
+  }
+});
+
 const courseSchema = new mongoose.Schema(
   {
     title: {
@@ -48,6 +99,7 @@ const courseSchema = new mongoose.Schema(
       type: Number, // in hours
       default: 0
     },
+    modules: [moduleSchema],
     lessons: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Lesson'

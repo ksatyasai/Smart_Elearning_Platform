@@ -23,6 +23,7 @@ import StudentCourses from '../pages/StudentCourses';
 import CreateCourse from '../pages/CreateCourse';
 import CreateQuiz from '../pages/CreateQuiz';
 import Course from '../pages/Course';
+import CourseLearning from '../pages/CourseLearning';
 import Quiz from '../pages/Quiz';
 import AITutor from '../pages/AITutor';
 import Analytics from '../pages/Analytics';
@@ -53,6 +54,7 @@ const AppRoutes = () => {
                 <Route path="/dashboard" element={<StudentDashboard />} />
                 <Route path="/courses" element={<StudentCourses />} />
                 <Route path="/course/:id" element={<Course />} />
+                <Route path="/course/:id/learn" element={<CourseLearning />} />
                 <Route path="/course/:courseId/lesson/:lessonId" element={<Course />} />
                 <Route path="/quiz/:id" element={<Quiz />} />
                 <Route path="/ai-tutor" element={<AITutor />} />

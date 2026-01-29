@@ -205,6 +205,16 @@ const Course = () => {
                             <span>Enrolled</span>
                         </div>
                     )}
+
+                    {enrolled && (
+                        <button 
+                            className="learn-btn"
+                            onClick={() => navigate(`/course/${id}/learn`)}
+                        >
+                            <Play size={20} />
+                            Start Learning
+                        </button>
+                    )}
                 </div>
 
                 <div className="course-header-image">

@@ -28,6 +28,11 @@ const enrollmentSchema = new mongoose.Schema(
       min: 0,
       max: 100
     },
+    moduleProgress: [{
+      moduleIndex: Number,
+      lessonsCompleted: [Number], // Array of lesson indices completed
+      completedAt: Date
+    }],
     certificateEarned: {
       type: Boolean,
       default: false

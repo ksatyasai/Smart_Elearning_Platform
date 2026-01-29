@@ -16,6 +16,10 @@ const lessonSchema = new mongoose.Schema(
       ref: 'Course',
       required: true
     },
+    moduleIndex: {
+      type: Number,
+      default: null // Maps to course.modules[moduleIndex]
+    },
     content: {
       type: String,
       required: true // HTML content
@@ -23,6 +27,10 @@ const lessonSchema = new mongoose.Schema(
     videoUrl: {
       type: String,
       default: null
+    },
+    youtubeUrl: {
+      type: String,
+      default: null // YouTube embed URL
     },
     resources: [{
       title: String,

@@ -55,23 +55,30 @@
 
 .input-icon {
     position: absolute;
-    left: var(--space-3);
+    left: var(--space-4);
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-muted);
     pointer-events: none;
+    z-index: 2;
 }
 
 .input-with-icon {
     /* make room for the left icon so typed text/placeholder won't be covered */
-    padding-left: var(--space-12);
+    padding-left: 56px; /* large enough for icon + gap */
 }
 
 /* ensure inputs keep proper stacking and spacing on small screens */
 @media (max-width: 480px) {
     .input-with-icon {
-        padding-left: var(--space-10);
+        padding-left: 48px;
     }
+}
+
+/* ensure input sits below icons in stacking context to avoid unexpected overlap */
+.input {
+    position: relative;
+    z-index: 1;
 }
 
 .password-toggle {
