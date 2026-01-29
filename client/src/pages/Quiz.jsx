@@ -2,7 +2,7 @@
  * Quiz.jsx
  * Quiz taking interface with question navigation
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Clock,
@@ -10,8 +10,10 @@ import {
     ChevronRight,
     CheckCircle,
     AlertCircle,
-    Flag
+    Flag,
+    Loader
 } from 'lucide-react';
+import { quizzesAPI } from '../services/api';
 import './Quiz.css';
 
 /**
@@ -22,135 +24,70 @@ const Quiz = () => {
     const { id } = useParams();
     const navigate = useNavigate();
 
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    // Quiz state
+    const [quiz, setQuiz] = useState(null);
+    const [questions, setQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [answers, setAnswers] = useState({});
     const [flagged, setFlagged] = useState([]);
     const [showResults, setShowResults] = useState(false);
-    const [timeRemaining, setTimeRemaining] = useState(45 * 60); // 45 minutes
+    const [timeRemaining, setTimeRemaining] = useState(0);
+    const [submissionResult, setSubmissionResult] = useState(null);
 
-    // Mock quiz data
-    const quiz = {
-        id: id || 1,
-        title: 'Machine Learning Fundamentals Quiz',
-        course: 'Advanced Machine Learning',
-        totalQuestions: 10,
-        duration: 45,
-        passingScore: 70
-    };
+    // Fetch quiz data
+    useEffect(() => {
+        const fetchQuiz = async () => {
+            try {
+                setLoading(true);
+                const response = await quizzesAPI.getById(id);
+                const data = response.data.quiz;
 
-    // Mock questions
-    const questions = [
-        {
-            id: 1,
-            text: 'What is the primary purpose of the activation function in a neural network?',
-            options: [
-                'To reduce the number of parameters',
-                'To introduce non-linearity into the model',
-                'To normalize the input data',
-                'To prevent overfitting'
-            ],
-            correctAnswer: 1
-        },
-        {
-            id: 2,
-            text: 'Which of the following is NOT a type of machine learning?',
-            options: [
-                'Supervised Learning',
-                'Unsupervised Learning',
-                'Reinforcement Learning',
-                'Deterministic Learning'
-            ],
-            correctAnswer: 3
-        },
-        {
-            id: 3,
-            text: 'What does the term "backpropagation" refer to in neural networks?',
-            options: [
-                'The forward pass of data through the network',
-                'The process of adjusting weights based on error gradients',
-                'The initialization of network weights',
-                'The process of collecting training data'
-            ],
-            correctAnswer: 1
-        },
-        {
-            id: 4,
-            text: 'Which optimizer is known for adapting the learning rate for each parameter?',
-            options: [
-                'Stochastic Gradient Descent (SGD)',
-                'Batch Gradient Descent',
-                'Adam',
-                'Fixed Learning Rate'
-            ],
-            correctAnswer: 2
-        },
-        {
-            id: 5,
-            text: 'What is the purpose of dropout in neural networks?',
-            options: [
-                'To speed up training',
-                'To reduce overfitting',
-                'To increase model complexity',
-                'To normalize outputs'
-            ],
-            correctAnswer: 1
-        },
-        {
-            id: 6,
-            text: 'Which loss function is typically used for binary classification?',
-            options: [
-                'Mean Squared Error',
-                'Cross-Entropy Loss',
-                'Hinge Loss',
-                'Huber Loss'
-            ],
-            correctAnswer: 1
-        },
-        {
-            id: 7,
-            text: 'What is a convolutional neural network primarily used for?',
-            options: [
-                'Natural Language Processing',
-                'Time Series Analysis',
-                'Image Recognition',
-                'Tabular Data'
-            ],
-            correctAnswer: 2
-        },
-        {
-            id: 8,
-            text: 'Which technique helps prevent vanishing gradients in deep networks?',
-            options: [
-                'Using sigmoid activation',
-                'Using ReLU activation',
-                'Increasing batch size',
-                'Reducing learning rate'
-            ],
-            correctAnswer: 1
-        },
-        {
-            id: 9,
-            text: 'What is transfer learning?',
-            options: [
-                'Training a model from scratch',
-                'Using a pre-trained model as a starting point',
-                'Transferring data between models',
-                'Moving models between devices'
-            ],
-            correctAnswer: 1
-        },
-        {
-            id: 10,
-            text: 'What is the main advantage of using batch normalization?',
-            options: [
-                'Reduces training time only',
-                'Stabilizes and accelerates training',
-                'Increases model parameters',
-                'Removes the need for activation functions'
-            ],
-            correctAnswer: 1
+                setQuiz(data);
+
+                // Map backend questions to frontend format if needed, or just use them
+                // Backend: { question: "...", options: [...], ... }
+                // Frontend expected: { text: "...", options: [...], ... }
+                const mappedQuestions = data.questions.map((q, index) => ({
+                    ...q,
+                    id: q._id || index,
+                    text: q.question // Map 'question' to 'text' for compatibility
+                }));
+
+                setQuestions(mappedQuestions);
+                setTimeRemaining(data.duration * 60); // Convert minutes to seconds
+                setLoading(false);
+            } catch (err) {
+                console.error('Error fetching quiz:', err);
+                setError('Failed to load quiz. Please try again.');
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchQuiz();
         }
-    ];
+    }, [id]);
+
+    // Timer effect
+    useEffect(() => {
+        if (!loading && !showResults && timeRemaining > 0) {
+            const timer = setInterval(() => {
+                setTimeRemaining((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        submitQuiz(); // Auto submit when time runs out
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [loading, showResults, timeRemaining]);
 
     // Format time
     const formatTime = (seconds) => {
@@ -194,33 +131,74 @@ const Quiz = () => {
     };
 
     // Submit quiz
-    const submitQuiz = () => {
-        // Calculate score
-        let correct = 0;
-        questions.forEach((q, index) => {
-            if (answers[index] === q.correctAnswer) {
-                correct++;
-            }
-        });
-        setShowResults(true);
+    const submitQuiz = async () => {
+        try {
+            setSubmitting(true);
+
+            // Format answers for backend (array of answers matching question order)
+            // Backend expects array of answers. 
+            // If user skipped a question, we should probably send null or handle it.
+            // But checking quizController, it maps answers by index.
+
+            const formattedAnswers = questions.map((_, index) => {
+                return answers[index] !== undefined ? answers[index] : null;
+            });
+
+            const response = await quizzesAPI.submit(id, formattedAnswers);
+
+            setSubmissionResult(response.data.submission);
+            setShowResults(true);
+        } catch (err) {
+            console.error('Error submitting quiz:', err);
+            alert('Failed to submit quiz. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    // Calculate score
-    const calculateScore = () => {
-        let correct = 0;
-        questions.forEach((q, index) => {
-            if (answers[index] === q.correctAnswer) {
-                correct++;
-            }
-        });
-        return Math.round((correct / questions.length) * 100);
-    };
+    // Calculate score (only used for local display before API integration, 
+    // but now we rely on backend response.
+    // Kept for immediate feedback if needed, but 'submissonResult' is better)
 
-    const score = calculateScore();
-    const passed = score >= quiz.passingScore;
+    if (loading) {
+        return (
+            <div className="quiz-page loading">
+                <Loader className="animate-spin" size={48} color="#2563eb" />
+                <p>Loading quiz...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="quiz-page error">
+                <AlertCircle size={48} color="#ef4444" />
+                <h2>Error Loading Quiz</h2>
+                <p>{error}</p>
+                <button className="btn btn-primary" onClick={() => navigate(-1)}>
+                    Go Back
+                </button>
+            </div>
+        );
+    }
+
+    if (!quiz || questions.length === 0) {
+        return (
+            <div className="quiz-page error">
+                <AlertCircle size={48} />
+                <h2>No Questions Found</h2>
+                <p>This quiz has no questions.</p>
+                <button className="btn btn-primary" onClick={() => navigate(-1)}>
+                    Go Back
+                </button>
+            </div>
+        );
+    }
 
     // Results View
-    if (showResults) {
+    if (showResults && submissionResult) {
+        const { score, percentage, passed, totalPoints } = submissionResult;
+
         return (
             <div className="quiz-page">
                 <div className="quiz-results">
@@ -237,18 +215,19 @@ const Quiz = () => {
                         }
                     </p>
                     <div className="results-score">
-                        <span className="score-value">{score}%</span>
-                        <span className="score-label">Your Score</span>
+                        <span className="score-value">{percentage}%</span>
+                        <span className="score-label">Your Score ({score}/{totalPoints} pts)</span>
                     </div>
                     <div className="results-stats">
                         <div className="stat">
                             <span className="stat-value">{Object.keys(answers).length}</span>
                             <span className="stat-label">Answered</span>
                         </div>
-                        <div className="stat">
-                            <span className="stat-value">{questions.filter((q, i) => answers[i] === q.correctAnswer).length}</span>
-                            <span className="stat-label">Correct</span>
-                        </div>
+                        {/* We don't have correct/incorrect count from backend response explicitly unless we calculate or backend sends details.
+                            Backend sends 'score', 'percentage', 'passed'. 
+                            So we can't show "Correct" count easily without more data.
+                            Let's just show Answered and Skipped.
+                        */}
                         <div className="stat">
                             <span className="stat-value">{questions.length - Object.keys(answers).length}</span>
                             <span className="stat-label">Skipped</span>
@@ -263,6 +242,8 @@ const Quiz = () => {
                             setFlagged([]);
                             setCurrentQuestion(0);
                             setShowResults(false);
+                            setSubmissionResult(null);
+                            setTimeRemaining(quiz.duration * 60);
                         }}>
                             Retry Quiz
                         </button>
@@ -280,9 +261,9 @@ const Quiz = () => {
             <div className="quiz-header">
                 <div className="quiz-info">
                     <h1>{quiz.title}</h1>
-                    <p>{quiz.course}</p>
+                    <p>{quiz.description}</p>
                 </div>
-                <div className="quiz-timer">
+                <div className={`quiz-timer ${timeRemaining < 300 ? 'warning' : ''}`}>
                     <Clock size={18} />
                     <span>{formatTime(timeRemaining)}</span>
                 </div>
@@ -326,13 +307,18 @@ const Quiz = () => {
                         <span className="question-number">
                             Question {currentQuestion + 1} of {questions.length}
                         </span>
-                        <button
-                            className={`flag-btn ${flagged.includes(currentQuestion) ? 'active' : ''}`}
-                            onClick={toggleFlag}
-                        >
-                            <Flag size={16} />
-                            {flagged.includes(currentQuestion) ? 'Flagged' : 'Flag for review'}
-                        </button>
+                        <div className="header-actions">
+                            <span className="question-points">
+                                {question.points} point{question.points !== 1 ? 's' : ''}
+                            </span>
+                            <button
+                                className={`flag-btn ${flagged.includes(currentQuestion) ? 'active' : ''}`}
+                                onClick={toggleFlag}
+                            >
+                                <Flag size={16} />
+                                {flagged.includes(currentQuestion) ? 'Flagged' : 'Flag for review'}
+                            </button>
+                        </div>
                     </div>
 
                     <h2 className="question-text">{question.text}</h2>
@@ -366,8 +352,18 @@ const Quiz = () => {
                             <button
                                 className="btn btn-primary"
                                 onClick={submitQuiz}
+                                disabled={submitting}
                             >
-                                Submit Quiz
+                                {submitting ? (
+                                    <>
+                                        <Loader size={18} className="animate-spin" />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    <>
+                                        Submit Quiz
+                                    </>
+                                )}
                             </button>
                         ) : (
                             <button
