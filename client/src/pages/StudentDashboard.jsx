@@ -295,7 +295,7 @@ const StudentDashboard = () => {
                                     <p className="text-gray-500 mb-4">No courses enrolled yet</p>
                                     <button 
                                         onClick={() => setShowCourseModal(true)}
-                                        className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                                        className="btn-ghost"
                                     >
                                         Browse Courses →
                                     </button>
@@ -336,7 +336,7 @@ const StudentDashboard = () => {
                     <div className="bg-white rounded-xl shadow-sm p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-900">Activity</h2>
-                            <button className="text-gray-400 hover:text-gray-600">
+                            <button className="btn-icon">
                                 <ChevronDown className="w-5 h-5" />
                             </button>
                         </div>
@@ -345,10 +345,10 @@ const StudentDashboard = () => {
                                 <button
                                     key={filter}
                                     onClick={() => setActivityFilter(filter)}
-                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                                    className={`btn-pill ${
                                         activityFilter === filter
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            ? 'btn-pill-active'
+                                            : 'btn-pill-inactive'
                                     }`}
                                 >
                                     {filter}
@@ -370,7 +370,7 @@ const StudentDashboard = () => {
                     <p className="mb-4">
                         Based on your learning pattern, you're most productive on Wednesday evenings. We recommend scheduling your study sessions then for better retention.
                     </p>
-                    <button className="flex items-center gap-2 bg-white text-indigo-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                    <button className="btn-secondary btn-small">
                         <Sparkles className="w-4 h-4" />
                         Get Personalized Tips
                     </button>
@@ -382,7 +382,7 @@ const StudentDashboard = () => {
                         <h2 className="text-2xl font-bold text-gray-900">Explore More Courses</h2>
                         <button
                             onClick={() => setShowCourseModal(true)}
-                            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-semibold"
+                            className="btn-ghost"
                         >
                             View All
                             <ChevronRight size={20} />
@@ -446,7 +446,8 @@ const StudentDashboard = () => {
                             />
                             <button
                                 onClick={() => setShowCourseModal(false)}
-                                className="absolute top-4 right-4 bg-white rounded-full p-2 hover:bg-gray-100"
+                                className="absolute top-4 right-4 btn-icon"
+                                style={{width: '2.5rem', height: '2.5rem'}}
                             >
                                 <X size={24} />
                             </button>
@@ -509,7 +510,8 @@ const StudentDashboard = () => {
                             <button
                                 onClick={() => handleEnroll(selectedCourse._id)}
                                 disabled={enrolling}
-                                className="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                className="w-full btn-primary"
+                                style={{padding: '1rem 1.5rem'}}
                             >
                                 {enrolling ? (
                                     <>

@@ -244,7 +244,7 @@ const InstructorDashboard = () => {
                             <p className="text-gray-500 mb-4">No courses yet. Create your first course!</p>
                             <button
                                 onClick={() => setShowModal(true)}
-                                className="text-indigo-600 hover:text-indigo-700 font-semibold"
+                                className="btn-ghost"
                             >
                                 Create Course →
                             </button>
@@ -293,21 +293,21 @@ const InstructorDashboard = () => {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => handleEdit(course)}
-                                                className="flex-1 flex items-center justify-center gap-2 bg-indigo-50 text-indigo-600 py-2 rounded hover:bg-indigo-100 transition-colors"
+                                                className="action-btn edit"
                                             >
                                                 <Edit2 size={16} />
                                                 Edit
                                             </button>
                                             <Link
                                                 to={`/instructor/create-quiz/${course._id}`}
-                                                className="flex-1 flex items-center justify-center gap-2 bg-green-50 text-green-600 py-2 rounded hover:bg-green-100 transition-colors"
+                                                className="action-btn quiz"
                                             >
                                                 <CheckSquare size={16} />
                                                 Quiz
                                             </Link>
                                             <button
                                                 onClick={() => handleDelete(course._id)}
-                                                className="flex-1 flex items-center justify-center gap-2 bg-red-50 text-red-600 py-2 rounded hover:bg-red-100 transition-colors"
+                                                className="action-btn delete"
                                             >
                                                 <Trash2 size={16} />
                                                 Delete
@@ -332,7 +332,7 @@ const InstructorDashboard = () => {
                             </h2>
                             <button
                                 onClick={resetForm}
-                                className="text-gray-500 hover:text-gray-700"
+                                className="btn-icon"
                             >
                                 <X size={24} />
                             </button>

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { coursesAPI } from '../services/api';
-import './Course.css';
+import './CreateCourse.css';
 
 /**
  * CreateCourse component
@@ -181,47 +181,51 @@ const CreateCourse = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-12 px-4">
-            <div className="max-w-4xl mx-auto">
+        <div className="create-course-container">
+            <div className="create-course-wrapper">
                 {/* Header */}
-                <div className="mb-8">
+                <div className="course-header-section">
                     <button
                         onClick={() => navigate('/instructor')}
-                        className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-6 font-semibold"
+                        className="back-button"
                     >
                         <ArrowLeft size={20} />
                         Back to Dashboard
                     </button>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Create a New Course</h1>
-                    <p className="text-gray-600">Share your knowledge with students around the world</p>
+                    <h1 className="course-page-title">Create a New Course</h1>
+                    <p className="course-page-subtitle">Share your knowledge with students around the world</p>
                 </div>
 
                 {/* Success Message */}
                 {success && (
-                    <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                        <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
-                        <p className="text-green-700 font-semibold">{success}</p>
+                    <div className="message-container">
+                        <div className="message-box message-success">
+                            <CheckCircle className="message-icon" />
+                            <p>{success}</p>
+                        </div>
                     </div>
                 )}
 
                 {/* Error Message */}
                 {error && (
-                    <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                        <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <h3 className="font-semibold text-red-900">Error</h3>
-                            <p className="text-red-700">{error}</p>
+                    <div className="message-container">
+                        <div className="message-box message-error">
+                            <AlertCircle className="message-icon" />
+                            <div>
+                                <h3>Error</h3>
+                                <p>{error}</p>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-8 space-y-8">
+                <form onSubmit={handleSubmit} className="course-form-container">
                     {/* Course Title */}
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                            <BookOpen size={18} className="text-indigo-600" />
-                            Course Title *
+                    <div className="form-group">
+                        <label className="form-label">
+                            <BookOpen className="form-label-icon" />
+                            Course Title <span className="required-indicator">*</span>
                         </label>
                         <input
                             type="text"
@@ -230,16 +234,16 @@ const CreateCourse = () => {
                             onChange={handleChange}
                             placeholder="e.g., Advanced Python Programming for Data Science"
                             maxLength="100"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                            className="form-input"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{formData.title.length}/100 characters</p>
+                        <div className="character-count">{formData.title.length}/100 characters</div>
                     </div>
 
                     {/* Description */}
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                            <FileText size={18} className="text-indigo-600" />
-                            Description *
+                    <div className="form-group">
+                        <label className="form-label">
+                            <FileText className="form-label-icon" />
+                            Description <span className="required-indicator">*</span>
                         </label>
                         <textarea
                             name="description"
@@ -247,25 +251,24 @@ const CreateCourse = () => {
                             onChange={handleChange}
                             placeholder="Describe what students will learn, the course structure, prerequisites, and target audience..."
                             maxLength="1000"
-                            rows="6"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all resize-none"
+                            className="form-textarea"
                         />
-                        <p className="text-xs text-gray-500 mt-1">{formData.description.length}/1000 characters</p>
+                        <div className="character-count">{formData.description.length}/1000 characters</div>
                     </div>
 
                     {/* Category and Level Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="form-row">
                         {/* Category */}
-                        <div>
-                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                                <Tag size={18} className="text-indigo-600" />
-                                Category *
+                        <div className="form-group">
+                            <label className="form-label">
+                                <Tag className="form-label-icon" />
+                                Category <span className="required-indicator">*</span>
                             </label>
                             <select
                                 name="category"
                                 value={formData.category}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                                className="form-select"
                             >
                                 <option value="">Select a category</option>
                                 {categories.map(cat => (
@@ -275,16 +278,16 @@ const CreateCourse = () => {
                         </div>
 
                         {/* Level */}
-                        <div>
-                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                                <AlertCircle size={18} className="text-indigo-600" />
-                                Level *
+                        <div className="form-group">
+                            <label className="form-label">
+                                <AlertCircle className="form-label-icon" />
+                                Level <span className="required-indicator">*</span>
                             </label>
                             <select
                                 name="level"
                                 value={formData.level}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                                className="form-select"
                             >
                                 {levels.map(level => (
                                     <option key={level} value={level}>{level}</option>
@@ -294,9 +297,9 @@ const CreateCourse = () => {
                     </div>
 
                     {/* Price */}
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                            <DollarSign size={18} className="text-indigo-600" />
+                    <div className="form-group">
+                        <label className="form-label">
+                            <DollarSign className="form-label-icon" />
                             Price ($)
                         </label>
                         <input
@@ -307,18 +310,16 @@ const CreateCourse = () => {
                             min="0"
                             step="0.01"
                             placeholder="0.00"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                            className="form-input"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Set to $0 for free courses
-                        </p>
+                        <p className="form-hint">Set to $0 for free courses</p>
                     </div>
 
                     {/* Image URL */}
-                    <div>
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                            <Image size={18} className="text-indigo-600" />
-                            Course Image URL *
+                    <div className="form-group">
+                        <label className="form-label">
+                            <Image className="form-label-icon" />
+                            Course Image URL <span className="required-indicator">*</span>
                         </label>
                         <input
                             type="url"
@@ -326,22 +327,20 @@ const CreateCourse = () => {
                             value={formData.image}
                             onChange={handleImageChange}
                             placeholder="https://images.unsplash.com/photo-..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                            className="form-input"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Use a high-quality image (recommended: 16:9 aspect ratio)
-                        </p>
+                        <p className="form-hint">Use a high-quality image (recommended: 16:9 aspect ratio)</p>
                     </div>
 
                     {/* Image Preview */}
                     {imagePreview && (
-                        <div>
-                            <label className="text-sm font-semibold text-gray-700 mb-3 block">Image Preview</label>
-                            <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+                        <div className="image-preview-section">
+                            <label className="image-preview-label">Image Preview</label>
+                            <div className="image-preview-container">
                                 <img
                                     src={imagePreview}
                                     alt="Course preview"
-                                    className="w-full h-64 object-cover"
+                                    className="image-preview"
                                     onError={(e) => {
                                         e.target.src = 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=600&h=400&fit=crop';
                                     }}
@@ -351,42 +350,57 @@ const CreateCourse = () => {
                     )}
 
                     {/* Publish Checkbox */}
-                    <div>
-                        <label className="flex items-center gap-3 cursor-pointer">
+                    <div className="form-group">
+                        <label className="checkbox-wrapper">
                             <input
                                 type="checkbox"
                                 name="isPublished"
                                 checked={formData.isPublished}
                                 onChange={handleChange}
-                                className="w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-600"
+                                className="checkbox-input"
                             />
-                            <span className="text-sm font-semibold text-gray-700">
-                                Publish course immediately
-                            </span>
+                            <span className="checkbox-label">Publish course immediately</span>
                         </label>
-                        <p className="text-xs text-gray-500 mt-2 ml-8">
+                        <p className="checkbox-hint">
                             If unchecked, the course will be saved as a draft and you can publish it later
                         </p>
                     </div>
 
                     {/* Course Info Summary */}
-                    <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                        <h3 className="font-semibold text-indigo-900 mb-3">Course Summary</h3>
-                        <div className="space-y-2 text-sm text-indigo-800">
-                            <p><strong>Title:</strong> {formData.title || 'Not provided'}</p>
-                            <p><strong>Category:</strong> {formData.category}</p>
-                            <p><strong>Level:</strong> {formData.level}</p>
-                            <p><strong>Price:</strong> ${formData.price.toFixed(2)}</p>
-                            <p><strong>Status:</strong> {formData.isPublished ? '✓ Published' : 'Draft'}</p>
+                    <div className="summary-box">
+                        <h3 className="summary-title">Course Summary</h3>
+                        <div className="summary-content">
+                            <div className="summary-item">
+                                <span className="summary-item-label">Title:</span>
+                                <span>{formData.title || 'Not provided'}</span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="summary-item-label">Category:</span>
+                                <span>{formData.category}</span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="summary-item-label">Level:</span>
+                                <span>{formData.level}</span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="summary-item-label">Price:</span>
+                                <span>${formData.price.toFixed(2)}</span>
+                            </div>
+                            <div className="summary-item">
+                                <span className="summary-item-label">Status:</span>
+                                <span className={formData.isPublished ? 'summary-item-value published' : 'summary-item-value draft'}>
+                                    {formData.isPublished ? '✓ Published' : 'Draft'}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-4 pt-6 border-t">
+                    <div className="form-actions">
                         <button
                             type="button"
                             onClick={() => navigate('/instructor')}
-                            className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                            className="btn btn-cancel"
                         >
                             Cancel
                         </button>
@@ -395,7 +409,7 @@ const CreateCourse = () => {
                             type="button"
                             onClick={handleDraft}
                             disabled={loading}
-                            className="flex-1 px-6 py-3 border border-indigo-300 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                            className="btn btn-draft"
                         >
                             {loading ? 'Saving...' : 'Save as Draft'}
                         </button>
@@ -403,7 +417,7 @@ const CreateCourse = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 py-3"
+                            className="btn btn-primary"
                         >
                             {loading ? (
                                 <>
@@ -421,28 +435,38 @@ const CreateCourse = () => {
                 </form>
 
                 {/* Help Section */}
-                <div className="mt-12 bg-blue-50 rounded-xl p-8 border border-blue-200">
-                    <h3 className="text-lg font-bold text-blue-900 mb-4">Tips for Creating a Great Course</h3>
-                    <ul className="space-y-3 text-blue-800">
-                        <li className="flex gap-3">
-                            <span className="text-xl">✓</span>
-                            <span><strong>Compelling Title:</strong> Make it clear and engaging. Include keywords that help students find your course.</span>
+                <div className="help-section">
+                    <h3 className="help-title">Tips for Creating a Great Course</h3>
+                    <ul className="help-list">
+                        <li className="help-item">
+                            <span className="help-check">✓</span>
+                            <span className="help-content">
+                                <strong>Compelling Title:</strong> Make it clear and engaging. Include keywords that help students find your course.
+                            </span>
                         </li>
-                        <li className="flex gap-3">
-                            <span className="text-xl">✓</span>
-                            <span><strong>Detailed Description:</strong> Clearly explain what students will learn and who the course is for.</span>
+                        <li className="help-item">
+                            <span className="help-check">✓</span>
+                            <span className="help-content">
+                                <strong>Detailed Description:</strong> Clearly explain what students will learn and who the course is for.
+                            </span>
                         </li>
-                        <li className="flex gap-3">
-                            <span className="text-xl">✓</span>
-                            <span><strong>Quality Image:</strong> Use a professional, clear image that represents your course well.</span>
+                        <li className="help-item">
+                            <span className="help-check">✓</span>
+                            <span className="help-content">
+                                <strong>Quality Image:</strong> Use a professional, clear image that represents your course well.
+                            </span>
                         </li>
-                        <li className="flex gap-3">
-                            <span className="text-xl">✓</span>
-                            <span><strong>Right Pricing:</strong> Consider market rates and the value you're providing.</span>
+                        <li className="help-item">
+                            <span className="help-check">✓</span>
+                            <span className="help-content">
+                                <strong>Right Pricing:</strong> Consider market rates and the value you're providing.
+                            </span>
                         </li>
-                        <li className="flex gap-3">
-                            <span className="text-xl">✓</span>
-                            <span><strong>Start as Draft:</strong> You can save as draft and add lessons, quizzes, and content later.</span>
+                        <li className="help-item">
+                            <span className="help-check">✓</span>
+                            <span className="help-content">
+                                <strong>Start as Draft:</strong> You can save as draft and add lessons, quizzes, and content later.
+                            </span>
                         </li>
                     </ul>
                 </div>
