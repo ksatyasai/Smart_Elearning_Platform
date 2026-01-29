@@ -12,7 +12,8 @@ import {
     X,
     Save,
     Trash2,
-    Edit2
+    Edit2,
+    CheckSquare
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { coursesAPI } from '../services/api';
@@ -297,6 +298,13 @@ const InstructorDashboard = () => {
                                                 <Edit2 size={16} />
                                                 Edit
                                             </button>
+                                            <Link
+                                                to={`/instructor/create-quiz/${course._id}`}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-green-50 text-green-600 py-2 rounded hover:bg-green-100 transition-colors"
+                                            >
+                                                <CheckSquare size={16} />
+                                                Quiz
+                                            </Link>
                                             <button
                                                 onClick={() => handleDelete(course._id)}
                                                 className="flex-1 flex items-center justify-center gap-2 bg-red-50 text-red-600 py-2 rounded hover:bg-red-100 transition-colors"

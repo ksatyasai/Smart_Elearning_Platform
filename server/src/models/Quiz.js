@@ -61,7 +61,14 @@ const quizSchema = new mongoose.Schema(
 
 // Calculate total points before saving
 quizSchema.pre('save', function (next) {
-  this.totalPoints = this.questions.reduce((sum, q) => sum + (q.points || 1), 0);
+  if (this.questions && Array.isArray(this.questions)) {
+    this.totalPoints = this.questions.reduce((sum, q) => {
+      const points = q.points || 1;
+      return sum + points;
+    }, 0);
+  } else {
+    this.totalPoints = 0;
+  }
   next();
 });
 

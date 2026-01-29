@@ -18,17 +18,19 @@ export const protect = async (req, res, next) => {
   try {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token decoded. User ID:', decoded.id);
+    
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {
-      console.log('User not found with id:', decoded.id);
+      console.log('❌ User not found with id:', decoded.id);
       return res.status(401).json({ success: false, message: 'User not found' });
     }
 
-    console.log('Auth successful for user:', req.user.email);
+    console.log('✓ Auth successful for user:', req.user.email, '| Role:', req.user.role, '| ID:', req.user._id.toString());
     next();
   } catch (error) {
-    console.error('Token verification error:', error.message);
+    console.error('❌ Token verification error:', error.message);
     return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
   }
 };

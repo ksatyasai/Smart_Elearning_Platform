@@ -18,6 +18,7 @@ import Signup from '../pages/Signup';
 import StudentDashboard from '../pages/StudentDashboard';
 import InstructorDashboard from '../pages/InstructorDashboard';
 import CreateCourse from '../pages/CreateCourse';
+import CreateQuiz from '../pages/CreateQuiz';
 import Course from '../pages/Course';
 import Quiz from '../pages/Quiz';
 import AITutor from '../pages/AITutor';
@@ -64,7 +65,9 @@ const AppRoutes = () => {
                 </ProtectedRoute>
             }>
                 <Route path="/instructor" element={<InstructorDashboard />} />
+                <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
                 <Route path="/instructor/create-course" element={<CreateCourse />} />
+                <Route path="/instructor/create-quiz/:courseId" element={<CreateQuiz />} />
                 <Route path="/instructor/analytics" element={<Analytics />} />
                 <Route path="/instructor/courses" element={<InstructorDashboard />} />
                 <Route path="/instructor/courses/:id" element={<Course />} />
