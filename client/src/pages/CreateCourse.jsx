@@ -2,8 +2,9 @@
  * CreateCourse.jsx
  * Dedicated page for instructors to create and upload new courses
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
     Upload,
     BookOpen,
@@ -32,6 +33,8 @@ const CreateCourse = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const location = useLocation();
+    const [editingId, setEditingId] = useState(null);
     
     const [formData, setFormData] = useState({
         title: '',
@@ -74,6 +77,25 @@ const CreateCourse = () => {
         setFormData(prev => ({ ...prev, image: value }));
         setImagePreview(value);
     };
+
+    useEffect(() => {
+        // If navigated here with course data (for editing), prefill the form
+        const course = location.state?.course;
+        if (course) {
+            setEditingId(course._id || course.id || null);
+            setFormData(prev => ({
+                ...prev,
+                title: course.title || '',
+                description: course.description || '',
+                category: course.category || prev.category,
+                level: course.level || prev.level,
+                price: typeof course.price === 'number' ? course.price : prev.price,
+                image: course.image || prev.image,
+                isPublished: !!course.isPublished
+            }));
+            setImagePreview(course.image || imagePreview);
+        }
+    }, [location]);
 
     const validateForm = () => {
         setError('');
@@ -136,13 +158,18 @@ const CreateCourse = () => {
                 instructor: user?.id
             };
 
-            const response = await coursesAPI.create(courseData);
+            let response;
+            if (editingId) {
+                response = await coursesAPI.update(editingId, courseData);
+            } else {
+                response = await coursesAPI.create(courseData);
+            }
 
             if (response.data.success) {
-                setSuccess('✓ Course created successfully!');
+                setSuccess(editingId ? '✓ Course updated successfully!' : '✓ Course created successfully!');
                 setTimeout(() => {
                     navigate('/instructor', { state: { courseCreated: true } });
-                }, 2000);
+                }, 1200);
             }
         } catch (err) {
             console.error('Error creating course:', err);
@@ -165,13 +192,18 @@ const CreateCourse = () => {
                 instructor: user?.id
             };
 
-            const response = await coursesAPI.create(courseData);
+            let response;
+            if (editingId) {
+                response = await coursesAPI.update(editingId, courseData);
+            } else {
+                response = await coursesAPI.create(courseData);
+            }
 
             if (response.data.success) {
-                setSuccess('✓ Course saved as draft!');
+                setSuccess('✓ Course saved successfully!');
                 setTimeout(() => {
                     navigate('/instructor');
-                }, 2000);
+                }, 1200);
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to save draft');

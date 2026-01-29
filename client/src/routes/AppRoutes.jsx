@@ -17,6 +17,7 @@ import Login from '../pages/Login';
 import Signup from '../pages/Signup';
 import StudentDashboard from '../pages/StudentDashboard';
 import InstructorDashboard from '../pages/InstructorDashboard';
+import InstructorCourses from '../pages/InstructorCourses';
 import CreateCourse from '../pages/CreateCourse';
 import CreateQuiz from '../pages/CreateQuiz';
 import Course from '../pages/Course';
@@ -69,7 +70,7 @@ const AppRoutes = () => {
                 <Route path="/instructor/create-course" element={<CreateCourse />} />
                 <Route path="/instructor/create-quiz/:courseId" element={<CreateQuiz />} />
                 <Route path="/instructor/analytics" element={<Analytics />} />
-                <Route path="/instructor/courses" element={<InstructorDashboard />} />
+                <Route path="/instructor/courses" element={<InstructorCourses />} />
                 <Route path="/instructor/courses/:id" element={<Course />} />
                 <Route path="/instructor/students" element={<InstructorDashboard />} />
             </Route>
