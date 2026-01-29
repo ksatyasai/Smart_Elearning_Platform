@@ -2,7 +2,7 @@
  * Analytics.jsx
  * Detailed analytics page with charts and metrics
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     TrendingUp,
     TrendingDown,
@@ -11,7 +11,9 @@ import {
     Target,
     Award,
     Calendar,
-    Download
+    Download,
+    Loader,
+    AlertCircle
 } from 'lucide-react';
 import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import {
@@ -28,6 +30,7 @@ import {
     Filler
 } from 'chart.js';
 import { useAuth } from '../hooks/useAuth';
+import { coursesAPI } from '../services/api';
 import './Analytics.css';
 
 // Register Chart.js components
@@ -51,42 +54,111 @@ ChartJS.register(
 const Analytics = () => {
     const { isInstructor } = useAuth();
     const [timeRange, setTimeRange] = useState('30days');
+    const [analyticsData, setAnalyticsData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Mock analytics data
-    const summaryStats = isInstructor ? [
-        { icon: Users, label: 'Total Students', value: '12,840', change: '+12%', positive: true },
-        { icon: Clock, label: 'Avg. Time on Platform', value: '2.4h', change: '+8%', positive: true },
-        { icon: Target, label: 'Avg. Quiz Score', value: '78%', change: '-2%', positive: false },
-        { icon: Award, label: 'Certificates Issued', value: '847', change: '+15%', positive: true }
-    ] : [
-        { icon: Clock, label: 'Total Study Time', value: '48h', change: '+12%', positive: true },
-        { icon: Target, label: 'Avg. Quiz Score', value: '85%', change: '+5%', positive: true },
-        { icon: Award, label: 'Courses Completed', value: '3', change: '+1', positive: true },
-        { icon: TrendingUp, label: 'Learning Streak', value: '12 days', change: 'Best: 24', positive: true }
-    ];
+    // Fetch analytics data
+    useEffect(() => {
+        if (isInstructor) {
+            fetchAnalyticsData();
+        } else {
+            setLoading(false);
+        }
+    }, [timeRange, isInstructor]);
 
-    // Study Time / Engagement Chart
-    const engagementData = {
-        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-        datasets: [
-            {
-                label: 'Study Hours',
-                data: [12, 18, 15, 22],
-                borderColor: '#4f46e5',
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                fill: true,
-                tension: 0.4
-            },
-            {
-                label: 'Goal',
-                data: [15, 15, 15, 15],
-                borderColor: '#d1d5db',
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0
-            }
-        ]
+    const fetchAnalyticsData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await coursesAPI.getInstructorAnalytics({ timeRange });
+            setAnalyticsData(response.data.analytics);
+        } catch (err) {
+            console.error('Error fetching analytics:', err);
+            setError(err.response?.data?.message || 'Failed to load analytics');
+        } finally {
+            setLoading(false);
+        }
     };
+
+    // Get summary stats from backend or use mock data
+    const getSummaryStats = () => {
+        if (!isInstructor || !analyticsData) {
+            return isInstructor ? [
+                { icon: Users, label: 'Total Students', value: '0', change: '+0%', positive: true },
+                { icon: Clock, label: 'Enrollments', value: '0', change: '+0%', positive: true },
+                { icon: Target, label: 'Avg. Progress', value: '0%', change: '+0%', positive: false },
+                { icon: Award, label: 'Certificates Issued', value: '0', change: '+0%', positive: true }
+            ] : [
+                { icon: Clock, label: 'Total Study Time', value: '48h', change: '+12%', positive: true },
+                { icon: Target, label: 'Avg. Quiz Score', value: '85%', change: '+5%', positive: true },
+                { icon: Award, label: 'Courses Completed', value: '3', change: '+1', positive: true },
+                { icon: TrendingUp, label: 'Learning Streak', value: '12 days', change: 'Best: 24', positive: true }
+            ];
+        }
+
+        const stats = analyticsData.summaryStats;
+        return [
+            { icon: Users, label: 'Total Students', value: stats.totalStudents.toString(), change: '+0%', positive: true },
+            { icon: Clock, label: 'Total Enrollments', value: stats.totalEnrollments.toString(), change: '+0%', positive: true },
+            { icon: Target, label: 'Avg. Progress', value: `${stats.avgProgress}%`, change: '+0%', positive: true },
+            { icon: Award, label: 'Certificates Issued', value: stats.certificatesIssued.toString(), change: '+0%', positive: true }
+        ];
+    };
+    
+    const summaryStats = getSummaryStats();
+
+    // Study Time / Engagement Chart - use real data if available
+    const getEngagementData = () => {
+        if (!isInstructor || !analyticsData) {
+            return {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [
+                    {
+                        label: 'Study Hours',
+                        data: [12, 18, 15, 22],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Goal',
+                        data: [15, 15, 15, 15],
+                        borderColor: '#d1d5db',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0
+                    }
+                ]
+            };
+        }
+
+        const dailyData = analyticsData.dailyEngagement || [];
+        return {
+            labels: dailyData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Enrollments',
+                    data: dailyData.map(d => d.count),
+                    borderColor: '#7c5cff',
+                    backgroundColor: 'rgba(124, 92, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Avg Progress %',
+                    data: dailyData.map(d => d.progress),
+                    borderColor: '#22c55e',
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0
+                }
+            ]
+        };
+    };
+
+    const engagementData = getEngagementData();
 
     const lineOptions = {
         responsive: true,
@@ -108,23 +180,48 @@ const Analytics = () => {
         }
     };
 
-    // Performance by Subject
-    const subjectData = {
-        labels: ['Machine Learning', 'Python', 'Data Science', 'Deep Learning', 'Statistics'],
-        datasets: [
-            {
-                data: [85, 92, 78, 65, 88],
-                backgroundColor: [
-                    '#4f46e5',
-                    '#22c55e',
-                    '#f59e0b',
-                    '#ef4444',
-                    '#8b5cf6'
-                ],
-                borderWidth: 0
-            }
-        ]
+    // Performance by Subject / Course
+    const getSubjectData = () => {
+        if (!isInstructor || !analyticsData) {
+            return {
+                labels: ['Machine Learning', 'Python', 'Data Science', 'Deep Learning', 'Statistics'],
+                datasets: [
+                    {
+                        data: [85, 92, 78, 65, 88],
+                        backgroundColor: [
+                            '#4f46e5',
+                            '#22c55e',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6'
+                        ],
+                        borderWidth: 0
+                    }
+                ]
+            };
+        }
+
+        const coursePerf = analyticsData.coursePerformance || [];
+        return {
+            labels: coursePerf.map(c => c.courseName),
+            datasets: [
+                {
+                    data: coursePerf.map(c => c.avgProgress),
+                    backgroundColor: [
+                        '#7c5cff',
+                        '#22c55e',
+                        '#f59e0b',
+                        '#ef4444',
+                        '#8b5cf6',
+                        '#0ea5e9'
+                    ],
+                    borderWidth: 0
+                }
+            ]
+        };
     };
+
+    const subjectData = getSubjectData();
 
     const doughnutOptions = {
         responsive: true,
@@ -138,17 +235,36 @@ const Analytics = () => {
     };
 
     // Activity by Day
-    const activityData = {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        datasets: [
-            {
-                label: 'Hours',
-                data: [2.5, 4, 5.5, 3, 4.5, 2, 1.5],
-                backgroundColor: '#4f46e5',
-                borderRadius: 6
-            }
-        ]
+    const getActivityData = () => {
+        if (!isInstructor || !analyticsData) {
+            return {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    {
+                        label: 'Hours',
+                        data: [2.5, 4, 5.5, 3, 4.5, 2, 1.5],
+                        backgroundColor: '#4f46e5',
+                        borderRadius: 6
+                    }
+                ]
+            };
+        }
+
+        const dailyData = analyticsData.dailyEngagement || [];
+        return {
+            labels: dailyData.map(d => d.date),
+            datasets: [
+                {
+                    label: 'New Enrollments',
+                    data: dailyData.map(d => d.count),
+                    backgroundColor: '#7c5cff',
+                    borderRadius: 6
+                }
+            ]
+        };
     };
+
+    const activityData = getActivityData();
 
     const barOptions = {
         responsive: true,
@@ -174,6 +290,35 @@ const Analytics = () => {
         { type: 'certificate', title: 'Earned Python Certificate', date: '3 days ago' },
         { type: 'quiz', title: 'Completed Data Viz Quiz', score: '78%', date: '5 days ago' }
     ];
+
+    // Show loading state
+    if (isInstructor && loading) {
+        return (
+            <div className="analytics-page">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', gap: '16px' }}>
+                    <Loader size={40} style={{ animation: 'spin 1s linear infinite', color: '#7c5cff' }} />
+                    <p>Loading analytics...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show error state
+    if (isInstructor && error) {
+        return (
+            <div className="analytics-page">
+                <div style={{ background: 'white', padding: '24px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                        <AlertCircle size={24} style={{ color: '#ff6b6b', flexShrink: 0 }} />
+                        <div>
+                            <h3 style={{ margin: 0, color: '#1a202c' }}>Error Loading Analytics</h3>
+                            <p style={{ margin: '8px 0 0 0', color: '#4a5568' }}>{error}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="analytics-page">

@@ -63,7 +63,15 @@
 }
 
 .input-with-icon {
-    padding-left: var(--space-10);
+    /* make room for the left icon so typed text/placeholder won't be covered */
+    padding-left: var(--space-12);
+}
+
+/* ensure inputs keep proper stacking and spacing on small screens */
+@media (max-width: 480px) {
+    .input-with-icon {
+        padding-left: var(--space-10);
+    }
 }
 
 .password-toggle {

@@ -241,6 +241,82 @@ export const updateCourse = async (req, res, next) => {
   }
 };
 
+// @desc    Get students enrolled in instructor's courses
+// @route   GET /api/courses/instructor/students
+// @access  Private (instructor only)
+export const getInstructorStudents = async (req, res, next) => {
+  try {
+    // Get all courses for this instructor
+    const courses = await Course.find({ instructor: req.user._id });
+
+    if (!courses.length) {
+      return res.status(200).json({
+        success: true,
+        students: [],
+        message: 'No courses found for this instructor'
+      });
+    }
+
+    const courseIds = courses.map(c => c._id);
+
+    // Get all enrollments for instructor's courses
+    const enrollments = await Enrollment.find({ course: { $in: courseIds } })
+      .populate({
+        path: 'student',
+        select: 'name email phone'
+      })
+      .populate({
+        path: 'course',
+        select: 'title'
+      });
+
+    // Group students and their enrollments
+    const studentMap = new Map();
+
+    enrollments.forEach(enrollment => {
+      const studentId = enrollment.student._id.toString();
+
+      if (!studentMap.has(studentId)) {
+        studentMap.set(studentId, {
+          id: studentId,
+          name: enrollment.student.name,
+          email: enrollment.student.email,
+          phone: enrollment.student.phone,
+          enrolledCourses: [],
+          courseNames: [],
+          enrollments: []
+        });
+      }
+
+      const student = studentMap.get(studentId);
+      if (!student.enrolledCourses.includes(enrollment.course._id.toString())) {
+        student.enrolledCourses.push(enrollment.course._id.toString());
+        student.courseNames.push(enrollment.course.title);
+      }
+
+      student.enrollments.push({
+        courseId: enrollment.course._id.toString(),
+        courseName: enrollment.course.title,
+        status: enrollment.status,
+        progress: enrollment.progress || 0,
+        enrolledAt: enrollment.enrolledAt,
+        completedAt: enrollment.completedAt,
+        certificateEarned: enrollment.certificateEarned
+      });
+    });
+
+    const students = Array.from(studentMap.values());
+
+    res.status(200).json({
+      success: true,
+      count: students.length,
+      students
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Delete course (Instructor)
 // @route   DELETE /api/courses/:id
 // @access  Private (instructor only)
@@ -262,6 +338,116 @@ export const deleteCourse = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: 'Course deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get analytics for instructor
+// @route   GET /api/courses/analytics
+// @access  Private (instructor only)
+export const getInstructorAnalytics = async (req, res, next) => {
+  try {
+    const { timeRange = '30days' } = req.query;
+    
+    // Get all courses for this instructor
+    const courses = await Course.find({ instructor: req.user._id });
+    const courseIds = courses.map(c => c._id);
+
+    // Get date range
+    let startDate = new Date();
+    switch (timeRange) {
+      case '7days':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case '90days':
+        startDate.setDate(startDate.getDate() - 90);
+        break;
+      case 'year':
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        break;
+      case '30days':
+      default:
+        startDate.setDate(startDate.getDate() - 30);
+    }
+
+    // Get all enrollments for instructor's courses in time range
+    const enrollments = await Enrollment.find({
+      course: { $in: courseIds },
+      enrolledAt: { $gte: startDate }
+    }).populate('student course');
+
+    // Calculate summary stats
+    const totalStudents = new Set(enrollments.map(e => e.student._id.toString())).size;
+    const totalEnrollments = enrollments.length;
+    const completedEnrollments = enrollments.filter(e => e.status === 'completed').length;
+    const certificatesIssued = enrollments.filter(e => e.certificateEarned).length;
+    const avgProgress = enrollments.length > 0
+      ? Math.round(enrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / enrollments.length)
+      : 0;
+
+    // Get daily engagement data (last 7 days)
+    const dailyEngagement = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+
+      const dayEnrollments = enrollments.filter(e => {
+        const eDate = new Date(e.updatedAt);
+        eDate.setHours(0, 0, 0, 0);
+        return eDate.getTime() === date.getTime();
+      });
+
+      dailyEngagement.push({
+        date: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        count: dayEnrollments.length,
+        progress: dayEnrollments.length > 0
+          ? Math.round(dayEnrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / dayEnrollments.length)
+          : 0
+      });
+    }
+
+    // Get performance by course
+    const coursePerformance = courses.map(course => {
+      const courseEnrollments = enrollments.filter(e => e.course._id.toString() === course._id.toString());
+      return {
+        courseId: course._id,
+        courseName: course.title,
+        students: courseEnrollments.length,
+        avgProgress: courseEnrollments.length > 0
+          ? Math.round(courseEnrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / courseEnrollments.length)
+          : 0,
+        completed: courseEnrollments.filter(e => e.status === 'completed').length
+      };
+    });
+
+    // Get status distribution
+    const statusDistribution = {
+      active: enrollments.filter(e => e.status === 'active').length,
+      completed: enrollments.filter(e => e.status === 'completed').length,
+      dropped: enrollments.filter(e => e.status === 'dropped').length
+    };
+
+    res.status(200).json({
+      success: true,
+      analytics: {
+        summaryStats: {
+          totalStudents,
+          totalEnrollments,
+          completedEnrollments,
+          certificatesIssued,
+          avgProgress
+        },
+        dailyEngagement,
+        coursePerformance,
+        statusDistribution,
+        timeRange
+      }
     });
   } catch (error) {
     next(error);

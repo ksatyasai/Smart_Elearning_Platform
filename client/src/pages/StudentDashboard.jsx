@@ -162,27 +162,44 @@ const StudentDashboard = () => {
         }
     ];
 
-    // Chart data from user stats
-    const chartData = {
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        datasets: [
-            {
-                label: 'Study Hours',
-                data: [2.5, 4, 5.5, 3, 4.5, 2, 1.5],
-                backgroundColor: [
-                    '#c7d2fe',
-                    '#818cf8',
-                    '#4f46e5',
-                    '#c7d2fe',
-                    '#4f46e5',
-                    '#c7d2fe',
-                    '#c7d2fe'
-                ],
-                borderRadius: 8,
-                borderSkipped: false,
-            }
-        ]
-    };
+    // Dynamic chart data derived from enrolled courses
+    const chartData = (() => {
+        if (!enrolledCourses || enrolledCourses.length === 0) {
+            return {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [
+                    {
+                        label: 'Study Hours',
+                        data: [2.5, 4, 5.5, 3, 4.5, 2, 1.5],
+                        backgroundColor: [
+                            '#c7d2fe', '#818cf8', '#4f46e5', '#c7d2fe', '#4f46e5', '#c7d2fe', '#c7d2fe'
+                        ],
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }
+                ]
+            };
+        }
+
+        // If user has enrolled courses, show progress per course as the activity chart
+        const labels = enrolledCourses.map(c => c.title.length > 20 ? c.title.slice(0, 20) + '…' : c.title);
+        const values = enrolledCourses.map(c => Math.round(c.enrollment?.progress || 0));
+
+        const bg = labels.map((_, i) => (i % 3 === 0 ? '#c7d2fe' : (i % 3 === 1 ? '#818cf8' : '#4f46e5')));
+
+        return {
+            labels,
+            datasets: [
+                {
+                    label: activityFilter === 'Study Hours' ? 'Progress (%)' : activityFilter,
+                    data: values,
+                    backgroundColor: bg,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }
+            ]
+        };
+    })();
 
     const chartOptions = {
         responsive: true,
@@ -202,7 +219,7 @@ const StudentDashboard = () => {
         scales: {
             y: {
                 beginAtZero: true,
-                max: 8,
+                max: enrolledCourses && enrolledCourses.length > 0 ? 100 : 8,
                 ticks: {
                     stepSize: 2
                 },
@@ -220,302 +237,241 @@ const StudentDashboard = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading your dashboard...</p>
-                </div>
+            <div className="student-dashboard dashboard-loading">
+                <Loader size={40} className="loading-spinner" />
+                <p>Loading your dashboard...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        Welcome back, {user?.name}! 👋
-                    </h1>
-                    <p className="text-gray-600">Here's your learning progress</p>
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <h3 className="font-semibold text-red-900">Error loading data</h3>
-                            <p className="text-red-700 text-sm">{error}</p>
-                        </div>
+        <div className="student-dashboard">
+            {/* Header */}
+            <div className="dashboard-header">
+                <div className="header-top">
+                    <div className="welcome-section">
+                        <h1>Welcome back, {user?.name || 'Student'}! 👋</h1>
+                        <p>Here's your learning progress and activity</p>
                     </div>
-                )}
+                    <div className="header-action">
+                        <Link to="/courses" className="btn btn-primary">
+                            <Plus size={20} />
+                            Browse Courses
+                        </Link>
+                    </div>
+                </div>
+            </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {stats.map((stat, index) => {
-                        const Icon = stat.icon;
-                        return (
-                            <div key={index} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-sm font-semibold text-gray-500 mb-1">{stat.label}</p>
-                                        <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
-                                        {stat.change && (
-                                            <p className="text-xs text-gray-600 mt-2">{stat.change}</p>
-                                        )}
-                                        {stat.subtext && (
-                                            <p className="text-xs text-gray-600 mt-2">{stat.subtext}</p>
-                                        )}
-                                    </div>
-                                    <Icon className={`w-10 h-10 text-indigo-600 bg-indigo-50 p-2 rounded-lg`} />
+            {/* Error Message */}
+            {error && (
+                <div className="message-container message-error">
+                    <AlertCircle size={20} />
+                    <div>
+                        <strong>Error loading data</strong>
+                        <p>{error}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                {stats.map((stat, index) => {
+                    const Icon = stat.icon;
+                    return (
+                        <div key={index} className="stat-card">
+                            <div className="stat-card-header">
+                                <div className="stat-info">
+                                    <div className="stat-label">{stat.label}</div>
+                                    <div className="stat-value">{stat.value}</div>
+                                    {stat.change && <div className="stat-change">{stat.change}</div>}
+                                    {stat.subtext && <div className="stat-change">{stat.subtext}</div>}
+                                </div>
+                                <div className="stat-icon">
+                                    <Icon size={24} />
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
-
-                {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Courses */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-gray-900">
-                                    My Courses ({enrolledCourses.length})
-                                </h2>
-                                <Link to="/courses" className="text-indigo-600 hover:text-indigo-700 text-sm font-semibold">
-                                    View All
-                                </Link>
-                            </div>
-
-                            {enrolledCourses.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                    <p className="text-gray-500 mb-4">No courses enrolled yet</p>
-                                    <button 
-                                        onClick={() => setShowCourseModal(true)}
-                                        className="btn-ghost"
-                                    >
-                                        Browse Courses →
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {enrolledCourses.slice(0, 3).map((course) => (
-                                        <div key={course._id || course.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <img
-                                                src={course.image}
-                                                alt={course.title}
-                                                className="w-16 h-16 rounded-lg object-cover"
-                                            />
-                                            <div className="flex-1">
-                                                <h3 className="font-semibold text-gray-900">{course.title}</h3>
-                                                <p className="text-sm text-gray-600">
-                                                    {course.category} • {course.level}
-                                                </p>
-                                                <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                                                    <div
-                                                        className="bg-indigo-600 h-2 rounded-full"
-                                                        style={{ width: `${course.enrollment?.progress || 0}%` }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="font-semibold text-gray-900">{course.enrollment?.progress || 0}%</p>
-                                                <ChevronRight className="w-5 h-5 text-gray-400 mt-2" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
                         </div>
+                    );
+                })}
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="content-grid">
+                {/* My Courses */}
+                <div className="card">
+                    <div className="card-header">
+                        <h2 className="card-title">My Courses ({enrolledCourses.length})</h2>
+                        <Link to="/courses" className="btn btn-ghost">
+                            View All
+                            <ChevronRight size={18} />
+                        </Link>
                     </div>
 
-                    {/* Activity Chart */}
-                    <div className="bg-white rounded-xl shadow-sm p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">Activity</h2>
-                            <button className="btn-icon">
-                                <ChevronDown className="w-5 h-5" />
+                    {enrolledCourses.length === 0 ? (
+                        <div className="empty-state">
+                            <BookOpen size={48} />
+                            <p className="empty-state-title">No courses enrolled yet</p>
+                            <button onClick={() => setShowCourseModal(true)} className="empty-state-action">
+                                Browse Courses →
                             </button>
                         </div>
-                        <div className="flex gap-2 mb-6">
-                            {['Study Hours', 'Lessons', 'Quizzes'].map((filter) => (
-                                <button
-                                    key={filter}
-                                    onClick={() => setActivityFilter(filter)}
-                                    className={`btn-pill ${
-                                        activityFilter === filter
-                                            ? 'btn-pill-active'
-                                            : 'btn-pill-inactive'
-                                    }`}
-                                >
-                                    {filter}
-                                </button>
-                            ))}
-                        </div>
-                        <div style={{ height: '250px' }}>
-                            <Bar data={chartData} options={chartOptions} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* AI Insights */}
-                <div className="mt-6 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white">
-                    <div className="flex items-center gap-3 mb-4">
-                        <Sparkles className="w-6 h-6" />
-                        <h2 className="text-xl font-bold">AI Insights</h2>
-                    </div>
-                    <p className="mb-4">
-                        Based on your learning pattern, you're most productive on Wednesday evenings. We recommend scheduling your study sessions then for better retention.
-                    </p>
-                    <button className="btn-secondary btn-small">
-                        <Sparkles className="w-4 h-4" />
-                        Get Personalized Tips
-                    </button>
-                </div>
-
-                {/* Browse All Courses Section */}
-                <div className="mt-12">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">Explore More Courses</h2>
-                        <button
-                            onClick={() => setShowCourseModal(true)}
-                            className="btn-ghost"
-                        >
-                            View All
-                            <ChevronRight size={20} />
-                        </button>
-                    </div>
-
-                    {allCourses.filter(c => !isEnrolled(c._id)).length === 0 ? (
-                        <div className="text-center py-12 bg-white rounded-xl">
-                            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-600">You're enrolled in all available courses!</p>
-                        </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {allCourses.filter(c => !isEnrolled(c._id)).slice(0, 8).map((course) => (
-                                <div
-                                    key={course._id}
-                                    onClick={() => openCourseDetail(course)}
-                                    className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow cursor-pointer"
-                                >
-                                    <img
-                                        src={course.image}
-                                        alt={course.title}
-                                        className="w-full h-32 object-cover"
-                                    />
-                                    <div className="p-4">
-                                        <h3 className="font-bold text-gray-900 line-clamp-2 mb-2">{course.title}</h3>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">
-                                                {course.category}
-                                            </span>
-                                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                                {course.level}
-                                            </span>
+                        <div className="course-list">
+                            {enrolledCourses.slice(0, 3).map((course) => (
+                                <div key={course._id || course.id} className="course-item">
+                                    <img src={course.image} alt={course.title} className="course-image" onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=600&h=400&fit=crop'} />
+                                    <div className="course-info">
+                                        <h3 className="course-title">{course.title}</h3>
+                                        <p className="course-meta">{course.category} • {course.level}</p>
+                                        <div className="progress-bar">
+                                            <div className="progress-fill" style={{ width: `${course.enrollment?.progress || 0}%` }}></div>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600">
-                                                {course.studentsEnrolled || 0} students
-                                            </span>
-                                            <span className="font-bold text-indigo-600">
-                                                ${course.price}
-                                            </span>
-                                        </div>
+                                    </div>
+                                    <div className="course-progress">
+                                        <span className="progress-value">{course.enrollment?.progress || 0}%</span>
+                                        <ChevronRight size={20} />
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
+
+                {/* Activity Chart */}
+                <div className="card">
+                    <div className="card-header">
+                        <h2 className="card-title card-title-small">Activity</h2>
+                        <button className="btn btn-icon">
+                            <ChevronDown size={20} />
+                        </button>
+                    </div>
+                    <div className="activity-filters">
+                        {['Study Hours', 'Lessons', 'Quizzes'].map((filter) => (
+                            <button
+                                key={filter}
+                                onClick={() => setActivityFilter(filter)}
+                                className={`btn-pill ${activityFilter === filter ? 'active' : ''}`}
+                            >
+                                {filter}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="chart-container">
+                        <Bar data={chartData} options={chartOptions} />
+                    </div>
+                </div>
             </div>
 
-            {/* Course Detail Modal */}
+            {/* AI Insights */}
+            <div className="ai-insights">
+                <div className="ai-insights-header">
+                    <Sparkles size={28} />
+                    <h3>AI Insights</h3>
+                </div>
+                <p className="ai-insights-content">
+                    Based on your learning pattern, you're most productive on Wednesday evenings. We recommend scheduling your study sessions then for better retention.
+                </p>
+                <button className="btn btn-secondary">
+                    <Sparkles size={18} />
+                    Get Personalized Tips
+                </button>
+            </div>
+
+            {/* Explore Courses */}
+            <div className="explore-section">
+                <div className="explore-header">
+                    <h2>Explore More Courses</h2>
+                    <button onClick={() => setShowCourseModal(true)} className="btn btn-ghost">
+                        View All <ChevronRight size={20} />
+                    </button>
+                </div>
+
+                {allCourses.filter(c => !isEnrolled(c._id)).length === 0 ? (
+                    <div className="empty-state" style={{background: 'white', border: '1px solid #e2e8f0'}}>
+                        <BookOpen size={48} />
+                        <p className="empty-state-title">You're enrolled in all available courses!</p>
+                    </div>
+                ) : (
+                    <div className="courses-grid">
+                        {allCourses.filter(c => !isEnrolled(c._id)).slice(0, 8).map((course) => (
+                            <div key={course._id} className="course-card" onClick={() => openCourseDetail(course)}>
+                                <img src={course.image} alt={course.title} className="course-card-image" onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=600&h=400&fit=crop'} />
+                                <div className="course-card-body">
+                                    <h3 className="course-card-title">{course.title}</h3>
+                                    <p className="course-card-desc">{course.description}</p>
+                                    <div className="course-card-meta">
+                                        <span className="course-meta-tag">{course.category}</span>
+                                        <span className="course-meta-tag">{course.level}</span>
+                                    </div>
+                                </div>
+                                <div className="course-card-footer">
+                                    <button className="btn btn-primary" style={{fontSize: '0.9rem', padding: '10px 16px'}} onClick={(e) => {
+                                        e.stopPropagation();
+                                        openCourseDetail(course);
+                                    }}>
+                                        <Plus size={18} />
+                                        Enroll
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Course Modal */}
             {showCourseModal && selectedCourse && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
-                        {/* Modal Header with Image */}
-                        <div className="relative">
-                            <img
-                                src={selectedCourse.image}
-                                alt={selectedCourse.title}
-                                className="w-full h-64 object-cover"
-                            />
-                            <button
-                                onClick={() => setShowCourseModal(false)}
-                                className="absolute top-4 right-4 btn-icon"
-                                style={{width: '2.5rem', height: '2.5rem'}}
-                            >
+                <div className="modal-overlay show">
+                    <div className="modal">
+                        <div className="modal-header" style={{padding: 0, overflow: 'hidden', borderBottom: 'none'}}>
+                            <img src={selectedCourse.image} alt={selectedCourse.title} style={{width: '100%', height: '240px', objectFit: 'cover'}} onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=600&h=400&fit=crop'} />
+                            <button onClick={() => setShowCourseModal(false)} className="modal-close" style={{position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.9)'}}>
                                 <X size={24} />
                             </button>
                         </div>
 
-                        {/* Modal Content */}
-                        <div className="p-8">
-                            {/* Messages */}
+                        <div className="modal-body">
                             {enrollSuccess && (
-                                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                                    <AlertCircle className="w-5 h-5 text-green-600" />
-                                    <p className="text-green-700 font-semibold">{enrollSuccess}</p>
+                                <div className="message-container message-success">
+                                    <AlertCircle size={20} />
+                                    <p>{enrollSuccess}</p>
                                 </div>
                             )}
                             {enrollError && (
-                                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-                                    <AlertCircle className="w-5 h-5 text-red-600" />
-                                    <p className="text-red-700">{enrollError}</p>
+                                <div className="message-container message-error">
+                                    <AlertCircle size={20} />
+                                    <p>{enrollError}</p>
                                 </div>
                             )}
 
-                            {/* Course Info */}
-                            <h2 className="text-3xl font-bold text-gray-900 mb-4">{selectedCourse.title}</h2>
+                            <h2 className="modal-title" style={{fontSize: '1.6rem', marginBottom: '16px'}}>{selectedCourse.title}</h2>
                             
-                            <div className="flex gap-4 mb-6">
-                                <span className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full font-semibold">
-                                    {selectedCourse.category}
-                                </span>
-                                <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full font-semibold">
-                                    {selectedCourse.level}
-                                </span>
+                            <div style={{display: 'flex', gap: '12px', marginBottom: '24px'}}>
+                                <span className="course-meta-tag" style={{background: 'linear-gradient(135deg, #f3f0ff, #faf5ff)', color: '#7c5cff', padding: '10px 16px', fontSize: '0.95rem', fontWeight: 700}}>{selectedCourse.category}</span>
+                                <span className="course-meta-tag" style={{padding: '10px 16px', fontSize: '0.95rem', fontWeight: 700}}>{selectedCourse.level}</span>
                             </div>
 
-                            <p className="text-gray-600 text-lg mb-6 leading-relaxed">
-                                {selectedCourse.description}
-                            </p>
+                            <p style={{fontSize: '1rem', color: '#4a5568', lineHeight: 1.6, marginBottom: '24px'}}>{selectedCourse.description}</p>
 
-                            <div className="grid grid-cols-3 gap-4 mb-8 p-4 bg-gray-50 rounded-lg">
+                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', padding: '16px', background: '#f8f9fa', borderRadius: '12px', marginBottom: '24px'}}>
                                 <div>
-                                    <p className="text-sm text-gray-600">Students</p>
-                                    <p className="text-2xl font-bold text-gray-900">
-                                        {selectedCourse.studentsEnrolled || 0}
-                                    </p>
+                                    <p style={{fontSize: '0.85rem', color: '#718096', marginBottom: '4px'}}>Students</p>
+                                    <p style={{fontSize: '1.5rem', fontWeight: 800, color: '#1a202c'}}>{selectedCourse.studentsEnrolled || 0}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Price</p>
-                                    <p className="text-2xl font-bold text-indigo-600">
-                                        ${selectedCourse.price}
-                                    </p>
+                                    <p style={{fontSize: '0.85rem', color: '#718096', marginBottom: '4px'}}>Price</p>
+                                    <p style={{fontSize: '1.5rem', fontWeight: 800, color: '#7c5cff'}}>${selectedCourse.price}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-gray-600">Instructor</p>
-                                    <p className="text-lg font-bold text-gray-900">
-                                        Available
-                                    </p>
+                                    <p style={{fontSize: '0.85rem', color: '#718096', marginBottom: '4px'}}>Status</p>
+                                    <p style={{fontSize: '1rem', fontWeight: 700, color: '#22c55e'}}>Available</p>
                                 </div>
                             </div>
 
-                            {/* Enroll Button */}
-                            <button
-                                onClick={() => handleEnroll(selectedCourse._id)}
-                                disabled={enrolling}
-                                className="w-full btn-primary"
-                                style={{padding: '1rem 1.5rem'}}
-                            >
+                            <button onClick={() => handleEnroll(selectedCourse._id)} disabled={enrolling} className="btn btn-primary" style={{width: '100%', padding: '14px 20px', fontSize: '1rem'}}>
                                 {enrolling ? (
                                     <>
-                                        <Loader size={20} className="animate-spin" />
+                                        <Loader size={20} className="loading-spinner" style={{animation: 'spin 1s linear infinite'}} />
                                         Enrolling...
                                     </>
                                 ) : (

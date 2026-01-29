@@ -13,6 +13,10 @@ router.use(protect);
 router.get('/enrolled', courseController.getEnrolledCourses);
 router.post('/:id/enroll', courseController.enrollCourse);
 router.get('/:id/progress', courseController.getCourseProgress);
+
+// Instructor only routes
+router.get('/instructor/students', authorize('instructor', 'admin'), courseController.getInstructorStudents);
+router.get('/instructor/analytics', authorize('instructor', 'admin'), courseController.getInstructorAnalytics);
 router.get('/:id', courseController.getCourse);
 
 // Instructor only routes

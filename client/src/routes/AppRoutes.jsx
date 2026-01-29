@@ -18,6 +18,8 @@ import Signup from '../pages/Signup';
 import StudentDashboard from '../pages/StudentDashboard';
 import InstructorDashboard from '../pages/InstructorDashboard';
 import InstructorCourses from '../pages/InstructorCourses';
+import InstructorStudents from '../pages/InstructorStudents';
+import StudentCourses from '../pages/StudentCourses';
 import CreateCourse from '../pages/CreateCourse';
 import CreateQuiz from '../pages/CreateQuiz';
 import Course from '../pages/Course';
@@ -49,7 +51,7 @@ const AppRoutes = () => {
                 </ProtectedRoute>
             }>
                 <Route path="/dashboard" element={<StudentDashboard />} />
-                <Route path="/courses" element={<StudentDashboard />} />
+                <Route path="/courses" element={<StudentCourses />} />
                 <Route path="/course/:id" element={<Course />} />
                 <Route path="/course/:courseId/lesson/:lessonId" element={<Course />} />
                 <Route path="/quiz/:id" element={<Quiz />} />
@@ -72,7 +74,7 @@ const AppRoutes = () => {
                 <Route path="/instructor/analytics" element={<Analytics />} />
                 <Route path="/instructor/courses" element={<InstructorCourses />} />
                 <Route path="/instructor/courses/:id" element={<Course />} />
-                <Route path="/instructor/students" element={<InstructorDashboard />} />
+                <Route path="/instructor/students" element={<InstructorStudents />} />
             </Route>
 
             {/* Fallback - Redirect to landing */}

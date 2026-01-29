@@ -10,10 +10,10 @@ import {
     BookOpen,
     AlertCircle,
     X,
-    Save,
     Trash2,
     Edit2,
-    CheckSquare
+    CheckSquare,
+    Loader
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { coursesAPI } from '../services/api';
@@ -172,312 +172,196 @@ const InstructorDashboard = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading your courses...</p>
-                </div>
+            <div className="instructor-dashboard dashboard-loading">
+                <Loader size={40} className="loading-spinner" />
+                <p>Loading your courses...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-8 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                            Welcome back, {user?.name?.split(' ')[0]}! 👋
-                        </h1>
-                        <p className="text-gray-600">Manage your courses and track student progress</p>
-                    </div>
-                    <Link
-                        to="/instructor/create-course"
-                        className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
-                    >
+        <div className="instructor-dashboard">
+            {/* Header */}
+            <div className="dashboard-header">
+                <div className="header-content">
+                    <h1>Your Courses 📚</h1>
+                    <p>Manage and track your courses</p>
+                </div>
+                <div className="header-actions">
+                    <Link to="/instructor/create-course" className="btn btn-primary">
                         <Plus size={20} />
                         Create Course
                     </Link>
                 </div>
-
-                {/* Success/Error Messages */}
-                {submitSuccess && (
-                    <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-green-600" />
-                        <p className="text-green-700">{submitSuccess}</p>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-red-600" />
-                        <p className="text-red-700">{error}</p>
-                    </div>
-                )}
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {stats.map((stat, index) => {
-                        const Icon = stat.icon;
-                        return (
-                            <div key={index} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <p className="text-sm font-semibold text-gray-500 mb-1">{stat.label}</p>
-                                        <h3 className="text-3xl font-bold text-gray-900">{stat.value}</h3>
-                                    </div>
-                                    <Icon className="w-10 h-10 text-indigo-600 bg-indigo-50 p-2 rounded-lg" />
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-
-                {/* Courses List */}
-                <div className="bg-white rounded-xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Your Courses</h2>
-
-                    {courses.length === 0 ? (
-                        <div className="text-center py-12">
-                            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500 mb-4">No courses yet. Create your first course!</p>
-                            <button
-                                onClick={() => setShowModal(true)}
-                                className="btn-ghost"
-                            >
-                                Create Course →
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {courses.map((course) => (
-                                <div key={course._id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                                    {/* Course Image */}
-                                    <div className="h-40 bg-gradient-to-br from-indigo-400 to-purple-500 overflow-hidden">
-                                        <img
-                                            src={course.image}
-                                            alt={course.title}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-
-                                    {/* Course Content */}
-                                    <div className="p-4">
-                                        <h3 className="font-bold text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
-                                        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{course.description}</p>
-
-                                        {/* Course Info */}
-                                        <div className="space-y-2 mb-4 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Level:</span>
-                                                <span className="font-semibold text-gray-900">{course.level}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Students:</span>
-                                                <span className="font-semibold text-gray-900">{course.studentsEnrolled || 0}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Price:</span>
-                                                <span className="font-semibold text-gray-900">${course.price}</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Status:</span>
-                                                <span className={`font-semibold ${course.isPublished ? 'text-green-600' : 'text-yellow-600'}`}>
-                                                    {course.isPublished ? 'Published' : 'Draft'}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {/* Actions */}
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => handleEdit(course)}
-                                                className="action-btn edit"
-                                            >
-                                                <Edit2 size={16} />
-                                                Edit
-                                            </button>
-                                            <Link
-                                                to={`/instructor/create-quiz/${course._id}`}
-                                                className="action-btn quiz"
-                                            >
-                                                <CheckSquare size={16} />
-                                                Quiz
-                                            </Link>
-                                            <button
-                                                onClick={() => handleDelete(course._id)}
-                                                className="action-btn delete"
-                                            >
-                                                <Trash2 size={16} />
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
             </div>
 
-            {/* Create/Edit Course Modal */}
+            {/* Messages */}
+            {submitSuccess && (
+                <div className="message-container message-success">
+                    <AlertCircle size={20} />
+                    <p>{submitSuccess}</p>
+                </div>
+            )}
+
+            {error && (
+                <div className="message-container message-error">
+                    <AlertCircle size={20} />
+                    <p>{error}</p>
+                </div>
+            )}
+
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                {stats.map((stat, index) => {
+                    const Icon = stat.icon;
+                    const isStudentsCard = stat.label === 'Total Students';
+                    return (
+                        <Link
+                            key={index}
+                            to={isStudentsCard ? '/instructor/students' : '#'}
+                            className={`stat-card ${isStudentsCard ? 'stat-card-clickable' : ''}`}
+                            style={{textDecoration: 'none'}}
+                        >
+                            <div className="stat-card-header">
+                                <div className="stat-info">
+                                    <div className="stat-label">{stat.label}</div>
+                                    <div className="stat-value">{stat.value}</div>
+                                    {stat.change && <div className="stat-change">{stat.change}</div>}
+                                </div>
+                                <div className="stat-icon">
+                                    <Icon size={24} />
+                                </div>
+                            </div>
+                        </Link>
+                    );
+                })}
+            </div>
+
+            {/* Courses Section */}
+            <div className="card">
+                <div className="card-header">
+                    <h2 className="card-title">Your Courses ({courses.length})</h2>
+                </div>
+
+                {courses.length === 0 ? (
+                    <div className="empty-state">
+                        <BookOpen size={48} />
+                        <p className="empty-state-title">No courses yet. Create your first course!</p>
+                        <Link to="/instructor/create-course" className="btn btn-primary" style={{marginTop: '16px'}}>
+                            <Plus size={18} />
+                            Create Course
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="courses-grid">
+                        {courses.map((course) => (
+                            <div key={course._id} className="course-card">
+                                <img src={course.image} alt={course.title} className="course-image" onError={(e) => e.target.src = 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=600&h=400&fit=crop'} />
+                                <div className="course-body">
+                                    <h3 className="course-title">{course.title}</h3>
+                                    <p style={{fontSize: '0.85rem', color: '#718096', margin: '0', flex: 1}}>{course.description}</p>
+                                    <div className="course-meta">
+                                        <span className="course-meta-tag">{course.category}</span>
+                                        <span className="course-meta-tag">{course.level}</span>
+                                    </div>
+                                    <div className="course-info">
+                                        <span>{course.studentsEnrolled || 0} students</span>
+                                        <span>${course.price}</span>
+                                    </div>
+                                </div>
+                                <div className="course-footer">
+                                    <button onClick={() => handleEdit(course)} className="action-btn edit">
+                                        <Edit2 size={16} />
+                                        Edit
+                                    </button>
+                                    <Link to={`/instructor/create-quiz/${course._id}`} className="action-btn quiz" style={{textDecoration: 'none', flex: 1}}>
+                                        <CheckSquare size={16} />
+                                        Quiz
+                                    </Link>
+                                    <button onClick={() => handleDelete(course._id)} className="action-btn delete">
+                                        <Trash2 size={16} />
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Create/Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
-                        {/* Modal Header */}
-                        <div className="sticky top-0 flex items-center justify-between p-6 border-b bg-white">
-                            <h2 className="text-2xl font-bold text-gray-900">
-                                {editingId ? 'Edit Course' : 'Create New Course'}
-                            </h2>
-                            <button
-                                onClick={resetForm}
-                                className="btn-icon"
-                            >
+                <div className="modal-overlay show">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h2 className="modal-title">{editingId ? 'Edit Course' : 'Create New Course'}</h2>
+                            <button onClick={resetForm} className="modal-close">
                                 <X size={24} />
                             </button>
                         </div>
 
-                        {/* Modal Body */}
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                        <form onSubmit={handleSubmit} className="modal-body">
                             {submitError && (
-                                <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                    <p className="text-red-700">{submitError}</p>
+                                <div className="message-container message-error">
+                                    <AlertCircle size={20} />
+                                    <p>{submitError}</p>
                                 </div>
                             )}
 
                             {/* Course Title */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Course Title *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleChange}
-                                    placeholder="e.g., Advanced Python Programming"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                                />
+                            <div className="form-group">
+                                <label className="form-label">Course Title</label>
+                                <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="Enter course title" className="form-input" />
                             </div>
 
-                            {/* Description */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Description *
-                                </label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    placeholder="Describe what students will learn..."
-                                    rows="4"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                                />
+                            {/* Course Description */}
+                            <div className="form-group">
+                                <label className="form-label">Description</label>
+                                <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Enter course description" className="form-textarea"></textarea>
                             </div>
 
-                            {/* Category and Level */}
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Category
-                                    </label>
-                                    <select
-                                        name="category"
-                                        value={formData.category}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                                    >
-                                        <option>Programming</option>
-                                        <option>Design</option>
-                                        <option>Business</option>
-                                        <option>Data Science</option>
-                                        <option>Web Development</option>
-                                        <option>Other</option>
+                            {/* Category & Level Row */}
+                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                                <div className="form-group">
+                                    <label className="form-label">Category</label>
+                                    <select name="category" value={formData.category} onChange={handleChange} className="form-select">
+                                        <option value="Programming">Programming</option>
+                                        <option value="Web Development">Web Development</option>
+                                        <option value="Data Science">Data Science</option>
+                                        <option value="Machine Learning">Machine Learning</option>
+                                        <option value="Design">Design</option>
+                                        <option value="Business">Business</option>
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Level
-                                    </label>
-                                    <select
-                                        name="level"
-                                        value={formData.level}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                                    >
-                                        <option>Beginner</option>
-                                        <option>Intermediate</option>
-                                        <option>Advanced</option>
+                                <div className="form-group">
+                                    <label className="form-label">Level</label>
+                                    <select name="level" value={formData.level} onChange={handleChange} className="form-select">
+                                        <option value="Beginner">Beginner</option>
+                                        <option value="Intermediate">Intermediate</option>
+                                        <option value="Advanced">Advanced</option>
                                     </select>
                                 </div>
                             </div>
 
-                            {/* Price and Image */}
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Price ($)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="price"
-                                        value={formData.price}
-                                        onChange={handleChange}
-                                        min="0"
-                                        step="0.01"
-                                        placeholder="0"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                                    />
+                            {/* Price & Image Row */}
+                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                                <div className="form-group">
+                                    <label className="form-label">Price ($)</label>
+                                    <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" className="form-input" step="0.01" />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        Image URL
-                                    </label>
-                                    <input
-                                        type="url"
-                                        name="image"
-                                        value={formData.image}
-                                        onChange={handleChange}
-                                        placeholder="https://..."
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                                    />
+                                <div className="form-group">
+                                    <label className="form-label">Image URL</label>
+                                    <input type="url" name="image" value={formData.image} onChange={handleChange} placeholder="https://..." className="form-input" />
                                 </div>
                             </div>
 
-                            {/* Preview */}
-                            {formData.image && (
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Preview</label>
-                                    <img
-                                        src={formData.image}
-                                        alt="Preview"
-                                        className="w-full h-40 object-cover rounded-lg"
-                                        onError={(e) => {
-                                            e.target.src = 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=400&h=300&fit=crop';
-                                        }}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Buttons */}
-                            <div className="flex gap-3 sticky bottom-0 bg-white pt-4 border-t">
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors py-3"
-                                >
-                                    <Save size={20} />
-                                    {editingId ? 'Update Course' : 'Create Course'}
+                            {/* Form Actions */}
+                            <div className="form-actions">
+                                <button type="button" onClick={resetForm} className="btn btn-secondary">Cancel</button>
+                                <button type="submit" disabled={loading} className="btn btn-primary">
+                                    {loading ? 'Saving...' : editingId ? 'Update Course' : 'Create Course'}
                                 </button>
                             </div>
                         </form>

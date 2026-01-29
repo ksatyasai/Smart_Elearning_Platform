@@ -98,7 +98,9 @@ export const coursesAPI = {
     // Instructor methods
     create: (data) => api.post('/courses', data),
     update: (id, data) => api.put(`/courses/${id}`, data),
-    delete: (id) => api.delete(`/courses/${id}`)
+    delete: (id) => api.delete(`/courses/${id}`),
+    getInstructorStudents: () => api.get('/courses/instructor/students'),
+    getInstructorAnalytics: (params) => api.get('/courses/instructor/analytics', { params })
 };
 
 // ============ Lessons API ============
